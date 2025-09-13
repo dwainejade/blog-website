@@ -16,7 +16,7 @@ const UserAuthForm = ({ type }) => {
             <InputBox
               name="fullname"
               type="text"
-              placeholder="Name"
+              placeholder="Full Name"
               icon={"fi-rr-user"}
             />
           ) : null}
