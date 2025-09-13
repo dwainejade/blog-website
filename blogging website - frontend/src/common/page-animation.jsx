@@ -9,13 +9,14 @@ const PageAnimation = ({
   transition = { duration: 0.5, ease: "easeOut" },
 }) => {
   return (
-    <AnimatePresence initial={false}>
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={keyValue}
         initial={initial}
         animate={animate}
         exit={exit}
         transition={transition}
+        layout
       >
         {children}
       </motion.div>
