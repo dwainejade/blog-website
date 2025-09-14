@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import logo from "../imgs/logo.png";
+import useAuthStore from "../stores/authStore";
 
 const Navbar = () => {
   const [searchBarOpen, setSearchBarOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuthStore();
 
   return (
     <>
@@ -36,18 +38,36 @@ const Navbar = () => {
             <i className="fi fi-rr-search text-xl" />
           </button>
 
-          <Link to="/editor" className="hidden md:flex gap-2 link rounded-full">
-            <i className="fi fi-rr-edit text-xl" />
-            <p>Write</p>
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/editor"
+                className="hidden md:flex gap-2 link rounded-full"
+              >
+                <i className="fi fi-rr-edit text-xl" />
+                <p>Write</p>
+              </Link>
 
-          <Link to="/signin" className="btn-dark ">
-            <p>Sign In</p>
-          </Link>
+              <div className="flex items-center gap-3">
+                <p className="hidden md:block text-sm">
+                  Welcome, {user?.fullname.split(" ")[0]}
+                </p>
+                <button onClick={logout} className="btn-light">
+                  <p>Sign Out</p>
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link to="/signin" className="btn-dark">
+                <p>Sign In</p>
+              </Link>
 
-          <Link to="/signup" className="btn-light hidden md:block">
-            <p>Sign Up</p>
-          </Link>
+              <Link to="/signup" className="btn-light hidden md:block">
+                <p>Sign Up</p>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
