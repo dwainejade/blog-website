@@ -1,16 +1,26 @@
 import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "./components/navbar.component";
 import UserAuthForm from "./pages/userAuthForm.page";
 import EditorPage from "./pages/editor.pages";
+import useAuthStore from "./stores/authStore";
 
 const App = () => {
+  const { isAuthenticated, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    // Check auth in background, don't block UI
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <>
       <Routes>
         <Route path="/" element={<Navbar />}>
           <Route path="signin" element={<UserAuthForm type="signin" />} />
           <Route path="signup" element={<UserAuthForm type="signup" />} />
-          <Route path="editor" element={<EditorPage />} />
+          {isAuthenticated && <Route path="editor" element={<EditorPage />} />}
+          <Route path="*" element={<div>404 Not Found</div>} />
         </Route>
       </Routes>
     </>
