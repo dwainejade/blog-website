@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 // schemas
 import User from "./Schema/User.js";
@@ -18,21 +19,73 @@ const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
 
 server.use(express.json());
-server.use(cors());
+server.use(cookieParser());
+server.use(
+  cors({
+    origin: ["http://localhost:5173", process.env.FRONTEND_URL].filter(Boolean),
+    credentials: true,
+  })
+);
 
 mongoose.connect(process.env.DB_LOCATION, {
   autoIndex: true,
 });
 
-const formatDataToSend = (user) => {
-  const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+const generateTokens = (user) => {
+  const accessToken = jwt.sign(
+    { id: user._id, username: user.personal_info.username },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" }
+  );
 
+  const refreshToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return { accessToken, refreshToken };
+};
+
+const formatDataToSend = (user) => {
   return {
-    accessToken,
     profile_img: user.personal_info.profile_img,
     username: user.personal_info.username,
     fullname: user.personal_info.fullname,
+    id: user._id,
   };
+};
+
+const setTokenCookies = (res, accessToken, refreshToken) => {
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
+const verifyJWT = (req, res, next) => {
+  const token = req.cookies.accessToken;
+
+  if (!token) {
+    return res.status(401).json({ error: "Access token is required" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: "Access token is invalid" });
+    }
+    req.user = decoded;
+    next();
+  });
 };
 
 const gernerateUsername = async (email) => {
@@ -94,6 +147,8 @@ server.post("/signup", async (req, res) => {
     user
       .save()
       .then((user) => {
+        const { accessToken, refreshToken } = generateTokens(user);
+        setTokenCookies(res, accessToken, refreshToken);
         return res.status(200).json(formatDataToSend(user));
       })
       .catch((err) => {
@@ -126,12 +181,66 @@ server.post("/signin", async (req, res) => {
           return res.status(403).json({ error: "Incorrect password." });
         }
 
+        const { accessToken, refreshToken } = generateTokens(user);
+        setTokenCookies(res, accessToken, refreshToken);
         return res.status(200).json(formatDataToSend(user));
       });
     })
     .catch((err) => {
       return res.status(500).json({ error: err.message });
     });
+});
+
+server.post("/refresh", (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: "Refresh token is required" });
+  }
+
+  jwt.verify(
+    refreshToken,
+    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+    async (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ error: "Refresh token is invalid" });
+      }
+
+      try {
+        const user = await User.findById(decoded.id);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } =
+          generateTokens(user);
+        setTokenCookies(res, accessToken, newRefreshToken);
+
+        res.status(200).json(formatDataToSend(user));
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  );
+});
+
+server.post("/logout", (_req, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
+server.get("/verify", verifyJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(formatDataToSend(user));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 server.listen(PORT, () => {
