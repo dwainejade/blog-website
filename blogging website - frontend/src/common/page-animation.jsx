@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 const PageAnimation = ({
   children,
   keyValue,
+  className = "",
   initial = { opacity: 0 },
   animate = { opacity: 1 },
   exit = { opacity: 0 },
@@ -17,6 +18,7 @@ const PageAnimation = ({
         exit={exit}
         transition={transition}
         layout
+        className={className}
       >
         {children}
       </motion.div>
