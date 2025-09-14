@@ -52,7 +52,26 @@ const Navbar = () => {
                 <p className="hidden md:block text-sm">
                   Welcome, {user?.fullname.split(" ")[0]}
                 </p>
-                <button onClick={logout} className="btn-light">
+
+                <Link to={`/dashboard/notification`}>
+                  <button className="w-12 h-12 rounded-full bg-grey flex items-center justify-center relative hover:bg-black/20">
+                    <i class="fi fi-rr-bell"></i>
+                  </button>
+                </Link>
+
+                <div className="relative">
+                  <button className="w-12 h-12 mt-1">
+                    <img
+                      src={user.profile_img}
+                      alt="Avatar"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </button>
+                </div>
+                <button
+                  onClick={logout}
+                  className="btn-light hover:bg-black/20"
+                >
                   <p>Sign Out</p>
                 </button>
               </div>
