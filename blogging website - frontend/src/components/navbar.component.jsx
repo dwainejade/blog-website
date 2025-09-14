@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import logo from "../imgs/logo.png";
 import useAuthStore from "../stores/authStore";
+import UserNavigationPanel from "./user-navigation.component";
 
 const Navbar = () => {
   const [searchBarOpen, setSearchBarOpen] = useState(false);
+  const [userPanelOpen, setUserPanelOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
 
   return (
@@ -40,13 +42,19 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
-              <Link
+              {/* <Link
                 to="/editor"
                 className="hidden md:flex gap-2 link rounded-full"
               >
                 <i className="fi fi-rr-edit text-xl" />
                 <p>Write</p>
-              </Link>
+              </Link> */}
+              {userPanelOpen && (
+                <UserNavigationPanel
+                  show={userPanelOpen}
+                  hide={() => setUserPanelOpen(false)}
+                />
+              )}
 
               <div className="flex items-center gap-3">
                 <p className="hidden md:block text-sm">
@@ -60,7 +68,11 @@ const Navbar = () => {
                 </Link>
 
                 <div className="relative">
-                  <button className="w-12 h-12 mt-1">
+                  <button
+                    className="w-12 h-12 mt-1"
+                    id="user-avatar-btn"
+                    onClick={() => setUserPanelOpen(!userPanelOpen)}
+                  >
                     <img
                       src={user.profile_img}
                       alt="Avatar"
@@ -68,12 +80,12 @@ const Navbar = () => {
                     />
                   </button>
                 </div>
-                <button
+                {/* <button
                   onClick={logout}
                   className="btn-light hover:bg-black/20"
                 >
                   <p>Sign Out</p>
-                </button>
+                </button> */}
               </div>
             </>
           ) : (
