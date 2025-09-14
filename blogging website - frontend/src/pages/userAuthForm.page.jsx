@@ -5,6 +5,7 @@ import InputBox from "../components/input.component";
 import googleIcon from "../imgs/google.png";
 import { Toaster, toast } from "react-hot-toast";
 import useAuthStore from "../stores/authStore";
+import { authWithGoogle } from "../common/firebase";
 
 const UserAuthForm = ({ type }) => {
   const authForm = useRef(null);
@@ -55,6 +56,19 @@ const UserAuthForm = ({ type }) => {
     }
   };
 
+  const handleGoogleAuth = (e) => {
+    e.preventDefault();
+
+    authWithGoogle()
+      .then((user) => {
+        console.log(user);
+      })
+      .catch((err) => {
+        toast.error("Google sign-in failed");
+        return console.log(err);
+      });
+  };
+
   return (
     <AnimationWrapper keyValue={type}>
       <section className="h-cover flex justify-center overflow-hidden items-center">
@@ -93,7 +107,11 @@ const UserAuthForm = ({ type }) => {
             onClick={handleSubmit}
             disabled={isLoading}
           >
-            {isLoading ? "Loading..." : type.replace(/signin/g, "Sign In").replace(/signup/g, "Sign Up")}
+            {isLoading
+              ? "Loading..."
+              : type
+                  .replace(/signin/g, "Sign In")
+                  .replace(/signup/g, "Sign Up")}
           </button>
 
           {/* <button className="btn-dark center mt-14" type="submit">
@@ -108,6 +126,7 @@ const UserAuthForm = ({ type }) => {
           <button
             className="btn-dark flex items-center justify-center mt-14 w-[75%] min-w-fit center"
             type="button"
+            onClick={handleGoogleAuth}
           >
             <img src={googleIcon} alt="" className="w-6 mr-4" />
             {type === "signin" ? "Sign In with Google" : "Sign Up with Google"}
