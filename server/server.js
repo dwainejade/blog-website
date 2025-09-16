@@ -6,9 +6,21 @@ import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import admin from "firebase-admin";
+import { getAuth } from "firebase-admin/auth";
 
 // schemas
 import User from "./Schema/User.js";
+
+// Initialize Firebase Admin
+// TODO: Add your actual Firebase private key to .env
+// admin.initializeApp({
+//   credential: admin.credential.cert({
+//     projectId: process.env.FIREBASE_PROJECT_ID,
+//     privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+//     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+//   }),
+// });
 
 // dotenv.config();
 
@@ -241,6 +253,84 @@ server.get("/verify", verifyJWT, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+server.post("/google-auth", async (req, res) => {
+  console.log("Google auth endpoint hit");
+  console.log("Request body:", req.body);
+
+  let { access_token } = req.body;
+  console.log("Access token received:", access_token);
+
+  // Temporarily return a mock response for testing
+  return res.status(200).json({
+    fullname: "Dwaine Jade",
+    username: "dwaine_jade",
+    profile_img: "https://lh3.googleusercontent.com/a/ACg8ocJVIYcwuXyZC708fVx6ZZ5ViZnTQ9_qkDKDC9UqQyIv69b9APPuZA=s384-c",
+    email: "dwainegnd@gmail.com",
+    google_auth: true,
+    access_token: "mock_access_token"
+  });
+
+  // TODO: Uncomment when Firebase is properly configured
+  /*
+  getAuth()
+    .verifyIdToken(access_token)
+    .then(async (decodedUser) => {
+      let { email, name, picture } = decodedUser;
+      picture = picture.replace("s96-c", "s384-c");
+      let user = await User.findOne({ "personal_info.email": email })
+        .select(
+          "personal_info.fullname personal_info.username personal_info.profile_img google_auth"
+        )
+        .then((u) => {
+          return u || null;
+        })
+        .catch((err) => {
+          return res.status(403).json({ error: err.message });
+        });
+
+      if (user) {
+        // login
+        if (!user.google_auth) {
+          return res.status(403).json({
+            error:
+              "Email already registered without Google. Please log in with your email and password.",
+          });
+        } else {
+          // sign up
+          let username = await gernerateUsername(email);
+          user = new User({
+            personal_info: {
+              fullname: name,
+              email,
+              profile_img: picture,
+              username,
+            },
+            google_auth: true,
+          });
+
+          await user
+            .save()
+            .then((u) => {
+              user = u;
+            })
+            .catch((err) => {
+              return res.status(500).json({ error: err.message });
+            });
+        }
+      }
+
+      return res.status(200).json(formatDataToSend(user));
+    })
+    .catch((err) => {
+      return res
+        .status(403)
+        .json({
+          error: "Failed to authenticate you with Google. Please try again.",
+        });
+    });
+  */
 });
 
 server.listen(PORT, () => {

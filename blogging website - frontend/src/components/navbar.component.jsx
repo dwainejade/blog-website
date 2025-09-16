@@ -63,7 +63,7 @@ const Navbar = () => {
 
                 <Link to={`/dashboard/notification`}>
                   <button className="w-12 h-12 rounded-full bg-grey flex items-center justify-center relative hover:bg-black/20">
-                    <i class="fi fi-rr-bell"></i>
+                    <i className="fi fi-rr-bell"></i>
                   </button>
                 </Link>
 

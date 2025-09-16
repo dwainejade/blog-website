@@ -21,17 +21,13 @@ const provider = new GoogleAuthProvider();
 const auth = getAuth();
 
 const authWithGoogle = async () => {
-  let user = null;
-
-  await signInWithPopup(auth, provider)
-    .then((result) => {
-      user = result.user;
-    })
-    .catch((error) => {
-      console.error("Error during Google sign-in:", error);
-    });
-
-  return user;
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error("Error during Google sign-in:", error);
+    throw error;
+  }
 };
 
 export { app, auth, authWithGoogle };

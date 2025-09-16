@@ -1,149 +1,190 @@
-import { create } from 'zustand';
-import axios from 'axios';
+import { create } from "zustand";
+import axios from "axios";
+import { authWithGoogle } from "../common/firebase";
 
 axios.defaults.withCredentials = true;
 
 const useAuthStore = create((set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
 
-      login: async (credentials) => {
-        set({ isLoading: true, error: null });
+  login: async (credentials) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.post(
+        import.meta.env.VITE_SERVER_DOMAIN + "/signin",
+        credentials
+      );
+      set({
+        user: data,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return data;
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error.response?.data?.error || "Login failed",
+      });
+      throw error;
+    }
+  },
+
+  loginWithGoogle: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await authWithGoogle();
+      console.log("Firebase user:", user);
+
+      // Get the ID token instead of access token
+      const idToken = await user.getIdToken();
+      console.log("ID Token:", idToken);
+
+      const formData = { access_token: idToken };
+      console.log("Sending to server:", formData);
+
+      const { data } = await axios.post(
+        import.meta.env.VITE_SERVER_DOMAIN + "/google-auth",
+        formData
+      );
+
+      console.log("Server response:", data);
+      set({
+        user: data,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return data;
+    } catch (error) {
+      console.error("Google auth error:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.error || "Google sign-in failed",
+      });
+      throw error;
+    }
+  },
+
+  signup: async (userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.post(
+        import.meta.env.VITE_SERVER_DOMAIN + "/signup",
+        userData
+      );
+      set({
+        user: data,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return data;
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error.response?.data?.error || "Signup failed",
+      });
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    set({ isLoading: true });
+    try {
+      await axios.post(import.meta.env.VITE_SERVER_DOMAIN + "/logout");
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+      window.location.href = "/signin";
+    } catch (error) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+      window.location.href = "/signin";
+    }
+  },
+
+  updateUser: (userData) => {
+    set({ user: userData });
+  },
+
+  clearError: () => {
+    set({ error: null });
+  },
+
+  checkAuth: async () => {
+    try {
+      const { data } = await axios.get(
+        import.meta.env.VITE_SERVER_DOMAIN + "/verify"
+      );
+      set({
+        user: data,
+        isAuthenticated: true,
+        error: null,
+      });
+      return true;
+    } catch (error) {
+      if (error.response?.status === 401) {
         try {
-          const { data } = await axios.post(
-            import.meta.env.VITE_SERVER_DOMAIN + '/signin',
-            credentials
-          );
-          set({
-            user: data,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-          return data;
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.response?.data?.error || 'Login failed'
-          });
-          throw error;
-        }
-      },
-
-      signup: async (userData) => {
-        set({ isLoading: true, error: null });
-        try {
-          const { data } = await axios.post(
-            import.meta.env.VITE_SERVER_DOMAIN + '/signup',
-            userData
-          );
-          set({
-            user: data,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-          return data;
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.response?.data?.error || 'Signup failed'
-          });
-          throw error;
-        }
-      },
-
-      logout: async () => {
-        set({ isLoading: true });
-        try {
-          await axios.post(import.meta.env.VITE_SERVER_DOMAIN + '/logout');
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          });
-          window.location.href = '/signin';
-        } catch (error) {
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          });
-          window.location.href = '/signin';
-        }
-      },
-
-      updateUser: (userData) => {
-        set({ user: userData });
-      },
-
-      clearError: () => {
-        set({ error: null });
-      },
-
-      checkAuth: async () => {
-        try {
-          const { data } = await axios.get(import.meta.env.VITE_SERVER_DOMAIN + '/verify');
-          set({
-            user: data,
-            isAuthenticated: true,
-            error: null
-          });
-          return true;
-        } catch (error) {
-          if (error.response?.status === 401) {
-            try {
-              const refreshed = await get().refreshToken();
-              if (refreshed) {
-                return true;
-              }
-            } catch (refreshError) {
-              // Refresh failed, continue to set unauthenticated state
-            }
+          const refreshed = await get().refreshToken();
+          if (refreshed) {
+            return true;
           }
-          set({
-            user: null,
-            isAuthenticated: false,
-            error: null
-          });
-          return false;
+        } catch (refreshError) {
+          // Refresh failed, continue to set unauthenticated state
         }
-      },
-
-      refreshToken: async () => {
-        try {
-          const { data } = await axios.post(import.meta.env.VITE_SERVER_DOMAIN + '/refresh');
-          set({
-            user: data,
-            isAuthenticated: true,
-            error: null
-          });
-          return true;
-        } catch (error) {
-          set({
-            user: null,
-            isAuthenticated: false,
-            error: null
-          });
-          return false;
-        }
-      },
-
-      getUser: () => {
-        const { user } = get();
-        return user;
       }
-    }));
+      set({
+        user: null,
+        isAuthenticated: false,
+        error: null,
+      });
+      return false;
+    }
+  },
+
+  refreshToken: async () => {
+    try {
+      const { data } = await axios.post(
+        import.meta.env.VITE_SERVER_DOMAIN + "/refresh"
+      );
+      set({
+        user: data,
+        isAuthenticated: true,
+        error: null,
+      });
+      return true;
+    } catch (error) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        error: null,
+      });
+      return false;
+    }
+  },
+
+  getUser: () => {
+    const { user } = get();
+    return user;
+  },
+}));
 
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
@@ -163,18 +204,20 @@ axios.interceptors.response.use(
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(() => {
-          return axios(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then(() => {
+            return axios(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        await axios.post(import.meta.env.VITE_SERVER_DOMAIN + '/refresh');
+        await axios.post(import.meta.env.VITE_SERVER_DOMAIN + "/refresh");
         processQueue(null);
         return axios(originalRequest);
       } catch (refreshError) {

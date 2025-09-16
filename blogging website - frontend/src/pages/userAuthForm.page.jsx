@@ -5,11 +5,10 @@ import InputBox from "../components/input.component";
 import googleIcon from "../imgs/google.png";
 import { Toaster, toast } from "react-hot-toast";
 import useAuthStore from "../stores/authStore";
-import { authWithGoogle } from "../common/firebase";
 
 const UserAuthForm = ({ type }) => {
   const authForm = useRef(null);
-  const { login, signup, isLoading, error } = useAuthStore();
+  const { login, signup, isLoading, error, loginWithGoogle } = useAuthStore();
 
   const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
   const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
@@ -59,14 +58,7 @@ const UserAuthForm = ({ type }) => {
   const handleGoogleAuth = (e) => {
     e.preventDefault();
 
-    authWithGoogle()
-      .then((user) => {
-        console.log(user);
-      })
-      .catch((err) => {
-        toast.error("Google sign-in failed");
-        return console.log(err);
-      });
+    loginWithGoogle();
   };
 
   return (
