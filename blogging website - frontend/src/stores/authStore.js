@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import axios from "axios";
-import { authWithGoogle } from "../common/firebase";
 
 axios.defaults.withCredentials = true;
 
@@ -33,41 +32,6 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  loginWithGoogle: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const user = await authWithGoogle();
-      console.log("Firebase user:", user);
-
-      // Get the ID token instead of access token
-      const idToken = await user.getIdToken();
-      console.log("ID Token:", idToken);
-
-      const formData = { access_token: idToken };
-      console.log("Sending to server:", formData);
-
-      const { data } = await axios.post(
-        import.meta.env.VITE_SERVER_DOMAIN + "/google-auth",
-        formData
-      );
-
-      console.log("Server response:", data);
-      set({
-        user: data,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-      return data;
-    } catch (error) {
-      console.error("Google auth error:", error);
-      set({
-        isLoading: false,
-        error: error.response?.data?.error || "Google sign-in failed",
-      });
-      throw error;
-    }
-  },
 
   signup: async (userData) => {
     set({ isLoading: true, error: null });

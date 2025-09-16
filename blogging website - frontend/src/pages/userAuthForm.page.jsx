@@ -2,13 +2,12 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 import AnimationWrapper from "../common/page-animation";
 import InputBox from "../components/input.component";
-import googleIcon from "../imgs/google.png";
 import { Toaster, toast } from "react-hot-toast";
 import useAuthStore from "../stores/authStore";
 
 const UserAuthForm = ({ type }) => {
   const authForm = useRef(null);
-  const { login, signup, isLoading, error, loginWithGoogle } = useAuthStore();
+  const { login, signup, isLoading, error } = useAuthStore();
 
   const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
   const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
@@ -55,11 +54,6 @@ const UserAuthForm = ({ type }) => {
     }
   };
 
-  const handleGoogleAuth = (e) => {
-    e.preventDefault();
-
-    loginWithGoogle();
-  };
 
   return (
     <AnimationWrapper keyValue={type}>
@@ -106,23 +100,6 @@ const UserAuthForm = ({ type }) => {
                   .replace(/signup/g, "Sign Up")}
           </button>
 
-          {/* <button className="btn-dark center mt-14" type="submit">
-            {type === "signin" ? "Sign In" : "Sign Up"}
-          </button> */}
-
-          <div className="relative flex w-full items-center gap-2 my-10 opacity-10 uppercase text-black font-bold">
-            <hr className="w-1/2 border-black" />
-            <p>or</p>
-            <hr className="w-1/2 border-black" />
-          </div>
-          <button
-            className="btn-dark flex items-center justify-center mt-14 w-[75%] min-w-fit center"
-            type="button"
-            onClick={handleGoogleAuth}
-          >
-            <img src={googleIcon} alt="" className="w-6 mr-4" />
-            {type === "signin" ? "Sign In with Google" : "Sign Up with Google"}
-          </button>
 
           {type === "signin" ? (
             <p className="text-center text-dark-grey mt-10">
