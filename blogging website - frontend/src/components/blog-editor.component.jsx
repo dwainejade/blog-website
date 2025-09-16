@@ -30,9 +30,9 @@ const BlogEditor = () => {
     if (!editorRef.current) {
       editorRef.current = new EditorJS({
         holder: "textEditor",
-        data: "",
+        data: content,
         tools: tools,
-        placeholder: "Start writing",
+        placeholder: "Write something here",
       });
     }
 
@@ -186,13 +186,13 @@ const BlogEditor = () => {
             </div>
 
             <textarea
+              defaultValue={title}
               name="Blog Title"
-              id=""
               placeholder="Blog Title"
               className="text-4xl font-medium w-full h-20 outline-none resize-none mt-10 leading-tight placeholder:opacity-40"
               onKeyDown={handleTitleKeyDown}
               onChange={handleTitleChange}
-            ></textarea>
+            />
 
             <hr className="w-full my-5 opacity-70" />
 
