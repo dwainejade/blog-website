@@ -44,3 +44,6 @@ coverage/
 
 # Frontend specific (Vite/React)
 vite.config.ts.timestamp-*
+
+# Firebase service account keys
+*firebase-adminsdk*.json
