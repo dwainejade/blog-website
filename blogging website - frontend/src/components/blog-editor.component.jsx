@@ -4,7 +4,7 @@ import logo from "../imgs/logo.png";
 import AnimationWrapper from "../common/page-animation";
 import defaultBanner from "../imgs/blog-banner.png";
 import { uploadImageToCloudinary } from "../utils/cloudinary";
-import toast from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import useEditorStore from "../stores/editorStore";
 import EditorJS from "@editorjs/editorjs";
 import { tools } from "./tools.component";
@@ -19,12 +19,11 @@ import { tools } from "./tools.component";
 // };
 
 const BlogEditor = () => {
-  const [banner, setBanner] = useState(defaultBanner);
   const [uploading, setUploading] = useState(false);
   const blog = useEditorStore((state) => state.blog);
+  const { title, banner, content, tags, description } = blog;
   const updateBlog = useEditorStore((state) => state.updateBlog);
-  const textEditor = useEditorStore((state) => state.textEditor);
-  const setTextEditor = useEditorStore((state) => state.setTextEditor);
+  const setEditorState = useEditorStore((state) => state.setEditorState);
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -71,7 +70,6 @@ const BlogEditor = () => {
       const result = await uploadImageToCloudinary(img);
 
       if (result.success) {
-        setBanner(result.url);
         toast.success("Image uploaded successfully!", { id: loadingToast });
         updateBlog({ ...blog, banner: result.url });
       } else {
@@ -105,8 +103,33 @@ const BlogEditor = () => {
     let img = e.target;
     img.src = defaultBanner;
   };
+
+  const handlePublishBlog = () => {
+    // if (!banner.length) {
+    //   return toast.error("Upload a blog banner to publish blog.");
+    // }
+
+    // if (!title.length) {
+    //   return toast.error("Add a blog title to publish.");
+    // }
+
+    if (editorRef.current) {
+      editorRef.current.save().then((data) => {
+        if (data.blocks.length) {
+          updateBlog({ ...blog, content: data });
+          setEditorState("publish");
+        } else {
+          return toast.error("Write some content to publish blog.");
+        }
+      });
+    } else {
+      return toast.error("Editor still loading.");
+    }
+  };
+
   return (
     <>
+      <Toaster position="top-center" />
       <nav className="navbar">
         <Link to={"/"}>
           <img src={logo} alt="logo" className="flex-none w-10" />
@@ -121,7 +144,9 @@ const BlogEditor = () => {
         </p>
 
         <div className="flex gap-4 ml-auto">
-          <button className="btn-dark py-2">Publish</button>
+          <button className="btn-dark py-2" onClick={handlePublishBlog}>
+            Publish
+          </button>
           <button className="btn-light py-2">Save Draft</button>
         </div>
       </nav>
@@ -137,7 +162,7 @@ const BlogEditor = () => {
                 }`}
               >
                 <img
-                  src={blog.banner}
+                  src={banner}
                   onError={handleError}
                   alt="Blog banner"
                   className={`z-20 w-full h-full object-cover ${
