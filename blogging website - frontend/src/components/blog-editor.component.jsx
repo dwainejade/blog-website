@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import logo from "../imgs/logo.png";
 import AnimationWrapper from "../common/page-animation";
 import defaultBanner from "../imgs/blog-banner.png";
 import { uploadImageToCloudinary } from "../utils/cloudinary";
@@ -8,6 +6,7 @@ import { Toaster, toast } from "react-hot-toast";
 import useEditorStore from "../stores/editorStore";
 import EditorJS from "@editorjs/editorjs";
 import { tools } from "./tools.component";
+import Nav from "./nav.component";
 
 // const blogStructure = {
 //   title: "",
@@ -127,33 +126,22 @@ const BlogEditor = () => {
     }
   };
 
+  const handleSaveDraft = () => {
+    toast.success("Draft saved!");
+  };
+
   return (
     <>
       <Toaster position="top-center" />
-      <nav className="navbar">
-        <Link to={"/"}>
-          <img src={logo} alt="logo" className="flex-none w-10" />
-        </Link>
-
-        <p
-          className={`max-md:hidden line-clamp-1 w-full ${
-            blog.title ? "text-black" : "text-red-400"
-          } `}
-        >
-          {blog.title ? blog.title : "New Blog"}
-        </p>
-
-        <div className="flex gap-4 ml-auto">
-          <button className="btn-dark py-2" onClick={handlePublishBlog}>
-            Publish
-          </button>
-          <button className="btn-light py-2">Save Draft</button>
-        </div>
-      </nav>
+      <Nav
+        type="editor"
+        onSaveDraft={handleSaveDraft}
+        onPublish={handlePublishBlog}
+      />
 
       <AnimationWrapper>
         <section>
-          <div className="mx-auto max-w[900px w-full">
+          <div className="mx-auto max-w-[900px] w-full">
             <div className="relative aspect-video bg-white border-4 border-grey hover-opacity-80">
               <label
                 htmlFor="uploadBanner"
