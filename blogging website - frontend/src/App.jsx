@@ -16,10 +16,11 @@ const App = () => {
   return (
     <>
       <Routes>
+        <Route path="/editor" element={<EditorPage />} />
         <Route path="/" element={<Navbar />}>
           <Route path="signin" element={<UserAuthForm type="signin" />} />
           <Route path="signup" element={<UserAuthForm type="signup" />} />
-          {isAuthenticated && <Route path="editor" element={<EditorPage />} />}
+          {/* {isAuthenticated && <Route path="editor" element={<EditorPage />} />} */}
           <Route path="*" element={<div>404 Not Found</div>} />
         </Route>
       </Routes>

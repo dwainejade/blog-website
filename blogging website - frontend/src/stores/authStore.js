@@ -6,7 +6,7 @@ axios.defaults.withCredentials = true;
 const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   login: async (credentials) => {
@@ -31,7 +31,6 @@ const useAuthStore = create((set, get) => ({
       throw error;
     }
   },
-
 
   signup: async (userData) => {
     set({ isLoading: true, error: null });
@@ -87,23 +86,34 @@ const useAuthStore = create((set, get) => ({
   },
 
   checkAuth: async () => {
+    set({ isLoading: true });
     try {
       const { data } = await axios.get(
-        import.meta.env.VITE_SERVER_DOMAIN + "/verify"
+        import.meta.env.VITE_SERVER_DOMAIN + "/verify",
+        { _skipInterceptor: true }
       );
       set({
         user: data,
         isAuthenticated: true,
+        isLoading: false,
         error: null,
       });
       return true;
     } catch (error) {
       if (error.response?.status === 401) {
         try {
-          const refreshed = await get().refreshToken();
-          if (refreshed) {
-            return true;
-          }
+          const { data } = await axios.post(
+            import.meta.env.VITE_SERVER_DOMAIN + "/refresh",
+            {},
+            { _skipInterceptor: true }
+          );
+          set({
+            user: data,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+          return true;
         } catch (refreshError) {
           // Refresh failed, continue to set unauthenticated state
         }
@@ -111,6 +121,7 @@ const useAuthStore = create((set, get) => ({
       set({
         user: null,
         isAuthenticated: false,
+        isLoading: false,
         error: null,
       });
       return false;
@@ -164,7 +175,7 @@ axios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest._skipInterceptor) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

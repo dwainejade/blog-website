@@ -54,7 +54,6 @@ const UserAuthForm = ({ type }) => {
     }
   };
 
-
   return (
     <AnimationWrapper keyValue={type}>
       <section className="h-cover flex justify-center overflow-hidden items-center">
@@ -99,7 +98,6 @@ const UserAuthForm = ({ type }) => {
                   .replace(/signin/g, "Sign In")
                   .replace(/signup/g, "Sign Up")}
           </button>
-
 
           {type === "signin" ? (
             <p className="text-center text-dark-grey mt-10">
