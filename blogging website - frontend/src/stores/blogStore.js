@@ -3,7 +3,10 @@ import axios from "axios";
 
 const useBlogStore = create((set, get) => ({
   blogs: [],
+  userBlogs: [],
+  userDrafts: [],
   isLoading: false,
+  isLoadingUserBlogs: false,
   error: null,
   hasMore: true,
   currentPage: 1,
@@ -67,6 +70,64 @@ const useBlogStore = create((set, get) => ({
       hasMore: true,
       currentPage: 1,
     });
+  },
+
+  // Fetch user's blogs
+  fetchUserBlogs: async () => {
+    set({ isLoadingUserBlogs: true, error: null });
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_SERVER_DOMAIN}/user-blogs`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      const { blogs, drafts } = response.data;
+
+      set({
+        userBlogs: blogs || [],
+        userDrafts: drafts || [],
+        isLoadingUserBlogs: false,
+        error: null,
+      });
+
+      return { blogs, drafts };
+    } catch (error) {
+      console.error("Error fetching user blogs:", error);
+      set({
+        isLoadingUserBlogs: false,
+        error: error.response?.data?.error || "Failed to fetch user blogs",
+      });
+      throw error;
+    }
+  },
+
+  // Delete blog
+  deleteBlog: async (blogId) => {
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_SERVER_DOMAIN}/blog/${blogId}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      // Remove from both userBlogs and userDrafts
+      const { userBlogs, userDrafts } = get();
+      set({
+        userBlogs: userBlogs.filter(blog => blog._id !== blogId),
+        userDrafts: userDrafts.filter(blog => blog._id !== blogId),
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting blog:", error);
+      set({
+        error: error.response?.data?.error || "Failed to delete blog",
+      });
+      throw error;
+    }
   },
 
   // Clear error

@@ -2,16 +2,32 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageAnimation from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
+import useBlogStore from "../stores/blogStore";
+import DashboardBlogCard from "../components/dashboard-blog-card.component";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuthStore();
+  const {
+    userBlogs,
+    userDrafts,
+    isLoadingUserBlogs,
+    fetchUserBlogs,
+    deleteBlog,
+    error: blogError
+  } = useBlogStore();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate("/signin");
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserBlogs();
+    }
+  }, [isAuthenticated, fetchUserBlogs]);
 
   if (isLoading) {
     return (
@@ -69,11 +85,15 @@ const DashboardPage = () => {
                     <div className="text-sm text-dark-grey">Total Reads</div>
                   </div>
                   <div className="text-center p-4 bg-grey/20 rounded-lg">
-                    <div className="text-2xl font-bold text-black">0</div>
+                    <div className="text-2xl font-bold text-black">
+                      {userDrafts?.length || 0}
+                    </div>
                     <div className="text-sm text-dark-grey">Drafts</div>
                   </div>
                   <div className="text-center p-4 bg-grey/20 rounded-lg">
-                    <div className="text-2xl font-bold text-black">0</div>
+                    <div className="text-2xl font-bold text-black">
+                      {userBlogs?.reduce((total, blog) => total + (blog.activity?.total_comments || 0), 0) || 0}
+                    </div>
                     <div className="text-sm text-dark-grey">Comments</div>
                   </div>
                 </div>
@@ -87,19 +107,66 @@ const DashboardPage = () => {
                     View All
                   </button>
                 </div>
-                <div className="space-y-4">
-                  <div className="text-center py-8 text-dark-grey">
-                    <i className="fi fi-rr-document text-4xl mb-4"></i>
-                    <p>No blogs yet. Start writing your first blog!</p>
-                    <button
-                      onClick={() => navigate('/editor')}
-                      className="btn-light mt-4"
-                    >
-                      Create Blog
-                    </button>
+
+                {blogError && (
+                  <div className="text-red text-center py-4 mb-4">
+                    {blogError}
+                  </div>
+                )}
+
+                {isLoadingUserBlogs ? (
+                  <div className="text-center py-8">
+                    <div className="loader"></div>
+                    <p className="text-dark-grey mt-4">Loading your blogs...</p>
+                  </div>
+                ) : (
+                  <div>
+                    {userBlogs && userBlogs.length > 0 ? (
+                      <div className="space-y-6">
+                        {userBlogs.slice(0, 3).map((blog) => (
+                          <DashboardBlogCard
+                            key={blog._id}
+                            blog={blog}
+                            onDelete={deleteBlog}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-dark-grey">
+                        <i className="fi fi-rr-document text-4xl mb-4"></i>
+                        <p>No published blogs yet. Start writing your first blog!</p>
+                        <button
+                          onClick={() => navigate('/editor')}
+                          className="btn-light mt-4"
+                        >
+                          Create Blog
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Drafts Section */}
+              {userDrafts && userDrafts.length > 0 && (
+                <div className="bg-white border border-grey rounded-lg p-6 mt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-medium text-xl">Recent Drafts</h2>
+                    <span className="text-sm text-dark-grey">
+                      {userDrafts.length} draft{userDrafts.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-6">
+                    {userDrafts.slice(0, 3).map((draft) => (
+                      <DashboardBlogCard
+                        key={draft._id}
+                        blog={draft}
+                        onDelete={deleteBlog}
+                      />
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Sidebar - Right Column */}
@@ -143,7 +210,7 @@ const DashboardPage = () => {
                   </button>
                   <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
                     <i className="fi fi-rr-document text-lg"></i>
-                    <span>Manage Drafts</span>
+                    <span>Manage Drafts ({userDrafts?.length || 0})</span>
                   </button>
                   <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
                     <i className="fi fi-rr-settings text-lg"></i>

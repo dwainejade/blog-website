@@ -511,6 +511,67 @@ server.get("/get-blog/:blog_id", async (req, res) => {
   }
 });
 
+// Get user's blogs (both published and drafts)
+server.get("/user-blogs", verifyJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch published blogs
+    const publishedBlogs = await Blog
+      .find({ author: userId, draft: false })
+      .sort({ publishedAt: -1 })
+      .select("blog_id title banner description activity tags publishedAt");
+
+    // Fetch drafts
+    const drafts = await Blog
+      .find({ author: userId, draft: true })
+      .sort({ publishedAt: -1 })
+      .select("blog_id title banner description tags publishedAt");
+
+    res.status(200).json({
+      blogs: publishedBlogs,
+      drafts: drafts
+    });
+  } catch (error) {
+    console.error("Error fetching user blogs:", error);
+    res.status(500).json({ error: "Failed to fetch user blogs" });
+  }
+});
+
+// Delete a blog
+server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
+  try {
+    const { blogId } = req.params;
+    const userId = req.user.id;
+
+    // Find and delete the blog (only if user is the author)
+    const deletedBlog = await Blog.findOneAndDelete({
+      _id: blogId,
+      author: userId
+    });
+
+    if (!deletedBlog) {
+      return res.status(404).json({ error: "Blog not found or unauthorized" });
+    }
+
+    // Remove from user's blogs array and update post count if it was published
+    const updateData = {
+      $pull: { blogs: blogId }
+    };
+
+    if (!deletedBlog.draft) {
+      updateData.$inc = { "account_info.total_posts": -1 };
+    }
+
+    await User.findByIdAndUpdate(userId, updateData);
+
+    res.status(200).json({ message: "Blog deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting blog:", error);
+    res.status(500).json({ error: "Failed to delete blog" });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
