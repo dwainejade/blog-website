@@ -310,12 +310,22 @@ server.post("/create-blog", verifyJWT, async (req, res) => {
 
     const savedBlog = await blog.save();
 
+    let incrementVal = draft ? 0 : 1;
+
+    await User.findOneAndUpdate(
+      { _id: savedBlog.author },
+      {
+        $inc: { "account_info.totla_posts": incrementVal },
+        $push: { blogs: savedBlog._id },
+      }
+    );
+
     res.status(201).json({
       message: "Blog created successfully",
       blog: {
         blog_id: savedBlog.blog_id,
         title: savedBlog.title,
-        authorId: savedBlog.author,
+        author: savedBlog.author,
         publishedAt: savedBlog.publishedAt,
         draft: savedBlog.draft,
         content: savedBlog.content,

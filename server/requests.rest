@@ -15,7 +15,6 @@ Content-Type: application/json
 
 {
     "title":"test title",
-    "content":"test content body",
     "banner": "https://example.com/image-url",
     "description":"short description text",
     "content":{
