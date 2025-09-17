@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { toast } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
+import axios from "axios";
 import useEditorStore from "../stores/editorStore";
 import Nav from "./nav.component";
 
@@ -7,7 +8,7 @@ const PublishForm = () => {
   // Get data from Zustand store
   const blog = useEditorStore((state) => state.blog);
   const updateBlog = useEditorStore((state) => state.updateBlog);
-  const { banner, title, tags, description } = blog;
+  const { banner, title, tags, description, content } = blog;
   const setEditorState = useEditorStore((state) => state.setEditorState);
 
   const [formData, setFormData] = useState({
@@ -66,7 +67,6 @@ const PublishForm = () => {
     });
   };
 
-
   const handlePublish = async () => {
     // Validation
     if (!title || !title.trim()) {
@@ -84,13 +84,27 @@ const PublishForm = () => {
 
     setIsPublishing(true);
 
+    let blogObj = {
+      title,
+      banner,
+      description,
+      content,
+      tags,
+      draft: false,
+    };
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await axios.post(import.meta.env.VITE_SERVER_DOMAIN + "/create-blog", blogObj, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
       toast.success("Blog published successfully!");
-      // Redirect to blog post or dashboard
+      console.log("Blog created:", response.data);
     } catch (error) {
-      toast.error("Failed to publish blog");
+      console.error("Error publishing blog:", error);
+      toast.error(error.response?.data?.error || "Failed to publish blog");
     } finally {
       setIsPublishing(false);
     }
@@ -105,6 +119,7 @@ const PublishForm = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <Toaster />
       <section className="relative w-full max-w-[900px] mx-auto p-6">
         {/* Header */}
         <Nav
@@ -188,7 +203,7 @@ const PublishForm = () => {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
+                  Short Description *
                   <span
                     className={`ml-2 text-xs ${
                       charCount > 200
@@ -268,7 +283,7 @@ const PublishForm = () => {
               </div>
 
               {/* SEO Tips */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">SEO Tips:</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Use relevant keywords in your title</li>
@@ -276,7 +291,7 @@ const PublishForm = () => {
                   <li>• Add 3-5 relevant tags</li>
                   <li>• Choose an appropriate category</li>
                 </ul>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
