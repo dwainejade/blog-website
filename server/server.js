@@ -9,7 +9,7 @@ import cookieParser from "cookie-parser";
 
 // schemas
 import User from "./Schema/User.js";
-
+import Blog from "./Schema/Blog.js";
 
 // dotenv.config();
 
@@ -244,6 +244,89 @@ server.get("/verify", verifyJWT, async (req, res) => {
   }
 });
 
+server.post("/create-blog", verifyJWT, async (req, res) => {
+  try {
+    // Verify user still exists in database
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let { title, banner, description, content, tags, draft } = req.body;
+
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+
+    if (!description.length) {
+      return res.status(400).json({ error: "Blog description is required" });
+    }
+
+    if (!banner.length) {
+      return res.status(400).json({ error: "Blog banner is required" });
+    }
+
+    if (!content || content.blocks.length === 0) {
+      return res.status(400).json({ error: "Blog content is required" });
+    }
+
+    // convert and consolidate tags
+    tags = [...new Set(tags.map((tag) => tag.toLowerCase()))];
+
+    // Generate unique blog_id
+    let blog_id =
+      title
+        .replace(/[^a-zA-Z0-9]/g, " ")
+        .replace(/\s+/g, "-")
+        .toLowerCase() +
+      "-" +
+      nanoid(6);
+
+    // Ensure blog_id is unique
+    let existingBlog = await Blog.findOne({ blog_id });
+    while (existingBlog) {
+      blog_id =
+        title
+          .replace(/[^a-zA-Z0-9]/g, " ")
+          .replace(/\s+/g, "-")
+          .toLowerCase() +
+        "-" +
+        nanoid(6);
+      existingBlog = await Blog.findOne({ blog_id });
+    }
+
+    // Create new blog with verified user as author
+    const blog = new Blog({
+      blog_id,
+      title: title.trim(),
+      banner: banner || "",
+      description: description || "",
+      content,
+      tags: tags || [],
+      author: req.user.id, // Use verified user ID
+      draft: draft || false,
+    });
+
+    const savedBlog = await blog.save();
+
+    res.status(201).json({
+      message: "Blog created successfully",
+      blog: {
+        blog_id: savedBlog.blog_id,
+        title: savedBlog.title,
+        authorId: savedBlog.author,
+        publishedAt: savedBlog.publishedAt,
+        draft: savedBlog.draft,
+        content: savedBlog.content,
+        tags: savedBlog.tags,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating blog:", error);
+    res.status(500).json({ error: "Failed to create blog" });
+  }
+});
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

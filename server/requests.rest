@@ -1,7 +1,25 @@
+### Sign in first to get the cookie
 POST http://localhost:3000/signin
 Content-Type: application/json
 
 {
-    "email": "dwainejade@gmail.com",
-    "password": "Donut123!"
+    "email": "kimjong@gmail.com",
+    "password": "John@123"
+}
+
+###
+
+### Create blog (requires signin cookie)
+POST http://localhost:3000/create-blog
+Content-Type: application/json
+
+{
+    "title":"test title",
+    "content":"test content body",
+    "banner": "https://example.com/image-url",
+    "description":"short description text",
+    "content":{
+        "blocks":[1,2,3]
+    },
+    "tags":["tag1", "tag two"]
 }
