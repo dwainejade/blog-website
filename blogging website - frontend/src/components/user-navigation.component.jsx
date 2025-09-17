@@ -43,6 +43,15 @@ const UserNavigationPanel = ({ show, hide }) => {
         className="bg-white absolute right-0 shadow rounded py-4 border-grey w-6- overflow-hidden duration-200 "
       >
         <Link
+          to="/dashboard"
+          className="flex gap-2 link pl-8 py-4"
+          onClick={handleLinkClick}
+        >
+          <i className="fi fi-rr-dashboard text-xl" />
+          <p>Dashboard</p>
+        </Link>
+
+        <Link
           to="/editor"
           className="flex gap-2 link pl-8 py-4"
           onClick={handleLinkClick}

@@ -19,8 +19,8 @@ const BlogPage = () => {
         const response = await axios.get(
           `${import.meta.env.VITE_SERVER_DOMAIN}/get-blog/${blog_id}`
         );
-        console.log("Full blog data:", response.data.blog);
-        console.log("Blog content structure:", response.data.blog.content);
+        // console.log("Full blog data:", response.data.blog);
+        // console.log("Blog content structure:", response.data.blog.content);
         setBlog(response.data.blog);
       } catch (err) {
         setError(err.response?.data?.error || "Failed to fetch blog");
