@@ -1,0 +1,15 @@
+{
+  "name": "mern-blogging-website",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd 'blogging website - frontend' && npm run build",
+    "start": "node server/server.js",
+    "install-client": "cd 'blogging website - frontend' && npm install",
+    "install-server": "cd server && npm install",
+    "install-all": "npm run install-server && npm run install-client",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd 'blogging website - frontend' && npm run dev\""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
