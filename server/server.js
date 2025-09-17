@@ -244,6 +244,133 @@ server.get("/verify", verifyJWT, async (req, res) => {
   }
 });
 
+// Create or update draft
+server.post("/drafts", verifyJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let { title, banner, description, content, tags } = req.body;
+
+    // Only validate title for drafts
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+
+    // convert and consolidate tags
+    tags = tags && Array.isArray(tags) ? [...new Set(tags.map((tag) => tag.toLowerCase()))] : [];
+
+    // Generate unique blog_id for draft
+    let blog_id =
+      title
+        .replace(/[^a-zA-Z0-9]/g, " ")
+        .replace(/\s+/g, "-")
+        .toLowerCase() +
+      "-" +
+      nanoid(6);
+
+    // Ensure blog_id is unique
+    let existingBlog = await Blog.findOne({ blog_id });
+    while (existingBlog) {
+      blog_id =
+        title
+          .replace(/[^a-zA-Z0-9]/g, " ")
+          .replace(/\s+/g, "-")
+          .toLowerCase() +
+        "-" +
+        nanoid(6);
+      existingBlog = await Blog.findOne({ blog_id });
+    }
+
+    // Create new draft
+    const blog = new Blog({
+      blog_id,
+      title: title.trim(),
+      banner: banner || "",
+      description: description || "",
+      content: content || { blocks: [] },
+      tags: tags || [],
+      author: req.user.id,
+      draft: true,
+    });
+
+    const savedBlog = await blog.save();
+
+    // Add to user's blogs array but don't increment published post count for drafts
+    await User.findOneAndUpdate(
+      { _id: savedBlog.author },
+      {
+        $push: { blogs: savedBlog._id },
+      }
+    );
+
+    res.status(201).json({
+      message: "Draft created successfully",
+      draftId: savedBlog._id,
+      blog_id: savedBlog.blog_id,
+      title: savedBlog.title,
+      draft: savedBlog.draft,
+    });
+  } catch (error) {
+    console.error("Error creating draft:", error);
+    res.status(500).json({ error: "Failed to create draft" });
+  }
+});
+
+// Update existing draft
+server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let { title, banner, description, content, tags } = req.body;
+
+    // Only validate title for drafts
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+
+    // convert and consolidate tags
+    tags = tags && Array.isArray(tags) ? [...new Set(tags.map((tag) => tag.toLowerCase()))] : [];
+
+    // Find and update the draft
+    const updatedBlog = await Blog.findOneAndUpdate(
+      {
+        _id: req.params.draftId,
+        author: req.user.id,
+        draft: true
+      },
+      {
+        title: title.trim(),
+        banner: banner || "",
+        description: description || "",
+        content: content || { blocks: [] },
+        tags: tags || [],
+      },
+      { new: true }
+    );
+
+    if (!updatedBlog) {
+      return res.status(404).json({ error: "Draft not found or not authorized" });
+    }
+
+    res.status(200).json({
+      message: "Draft updated successfully",
+      draftId: updatedBlog._id,
+      blog_id: updatedBlog.blog_id,
+      title: updatedBlog.title,
+      draft: updatedBlog.draft,
+    });
+  } catch (error) {
+    console.error("Error updating draft:", error);
+    res.status(500).json({ error: "Failed to update draft" });
+  }
+});
+
 server.post("/create-blog", verifyJWT, async (req, res) => {
   try {
     // Verify user still exists in database
@@ -259,20 +386,23 @@ server.post("/create-blog", verifyJWT, async (req, res) => {
       return res.status(400).json({ error: "Blog title is required" });
     }
 
-    if (!description.length) {
-      return res.status(400).json({ error: "Blog description is required" });
-    }
+    // For published blogs, validate all fields
+    if (!draft) {
+      if (!description || !description.length) {
+        return res.status(400).json({ error: "Blog description is required" });
+      }
 
-    if (!banner.length) {
-      return res.status(400).json({ error: "Blog banner is required" });
-    }
+      if (!banner || !banner.length) {
+        return res.status(400).json({ error: "Blog banner is required" });
+      }
 
-    if (!content || content.blocks.length === 0) {
-      return res.status(400).json({ error: "Blog content is required" });
+      if (!content || content.blocks.length === 0) {
+        return res.status(400).json({ error: "Blog content is required" });
+      }
     }
 
     // convert and consolidate tags
-    tags = [...new Set(tags.map((tag) => tag.toLowerCase()))];
+    tags = tags && Array.isArray(tags) ? [...new Set(tags.map((tag) => tag.toLowerCase()))] : [];
 
     // Generate unique blog_id
     let blog_id =

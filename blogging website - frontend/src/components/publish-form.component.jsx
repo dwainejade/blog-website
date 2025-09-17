@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
-import axios from "axios";
+import { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import useEditorStore from "../stores/editorStore";
 import Nav from "./nav.component";
@@ -11,7 +10,9 @@ const PublishForm = () => {
   // Get data from Zustand store
   const blog = useEditorStore((state) => state.blog);
   const updateBlog = useEditorStore((state) => state.updateBlog);
-  const { banner, title, tags, description, content } = blog;
+  const saveDraft = useEditorStore((state) => state.saveDraft);
+  const publishBlog = useEditorStore((state) => state.publishBlog);
+  const { banner, title, tags, description } = blog;
   const setEditorState = useEditorStore((state) => state.setEditorState);
 
   const [formData, setFormData] = useState({
@@ -71,51 +72,17 @@ const PublishForm = () => {
   };
 
   const handlePublish = async () => {
-    // Validation
-    if (!title || !title.trim()) {
-      return toast.error("Blog title is required");
-    }
-    if (!description || !description.trim()) {
-      return toast.error("Blog description is required");
-    }
-    if (description.length < 50) {
-      return toast.error("Description should be at least 50 characters");
-    }
-    if (description.length > 200) {
-      return toast.error("Description should not exceed 200 characters");
-    }
-
     setIsPublishing(true);
 
-    let blogObj = {
-      title,
-      banner,
-      description,
-      content,
-      tags,
-      draft: false,
-    };
-
     try {
-      const response = await axios.post(import.meta.env.VITE_SERVER_DOMAIN + "/create-blog", blogObj, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const result = await publishBlog();
 
-      console.log("Blog created:", response.data);
-
-      // Show success message immediately
-      toast.success("Blog published successfully!");
-
-      // Navigate to home page after 2 seconds
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
-
-    } catch (error) {
-      console.error("Error publishing blog:", error);
-      toast.error(error.response?.data?.error || "Failed to publish blog");
+      if (result.success) {
+        // Navigate to home page after 2 seconds
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      }
     } finally {
       // Reset loading state after a short delay for both success and error
       setTimeout(() => {
@@ -124,8 +91,16 @@ const PublishForm = () => {
     }
   };
 
-  const handleSaveDraft = () => {
-    toast.success("Draft saved!");
+  const handleSaveDraft = async () => {
+    setIsPublishing(true);
+
+    try {
+      await saveDraft();
+    } finally {
+      setTimeout(() => {
+        setIsPublishing(false);
+      }, 1000);
+    }
   };
 
   const currentTags = Array.isArray(tags) ? tags : tags ? tags.split(", ") : [];

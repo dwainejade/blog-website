@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const blogStructure = {
   title: "",
@@ -9,6 +11,8 @@ const blogStructure = {
   description: "",
   author: { personal_info: {} },
   category: "",
+  draftId: null, // null = new draft, string = existing draft
+  isLocalDraft: false, // indicates unsaved local changes
 };
 
 const useEditorStore = create(
@@ -22,7 +26,12 @@ const useEditorStore = create(
 
       setEditorState: (newState) => set({ editorState: newState }),
 
-      updateBlog: (content) => set({ blog: content }),
+      updateBlog: (content) => set({
+        blog: {
+          ...content,
+          isLocalDraft: true // Mark as locally modified
+        }
+      }),
 
       setTextEditor: (newState) => set({ textEditor: newState }),
 
@@ -41,6 +50,135 @@ const useEditorStore = create(
             [field]: value,
           },
         })),
+
+      // Save draft function
+      saveDraft: async () => {
+        const { blog } = get();
+
+        // Only validate title for drafts
+        if (!blog.title || !blog.title.trim()) {
+          toast.error("Blog title is required to save draft");
+          return { success: false, error: "Title required" };
+        }
+
+        const draftObj = {
+          title: blog.title,
+          banner: blog.banner || "",
+          description: blog.description || "",
+          content: blog.content || { blocks: [] },
+          tags: blog.tags || [],
+        };
+
+        try {
+          let response;
+
+          if (blog.draftId) {
+            // Update existing draft
+            response = await axios.put(
+              `${import.meta.env.VITE_SERVER_DOMAIN}/drafts/${blog.draftId}`,
+              draftObj,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                withCredentials: true,
+              }
+            );
+            console.log("Draft updated:", response.data);
+            toast.success("Draft updated successfully!");
+          } else {
+            // Create new draft
+            response = await axios.post(
+              import.meta.env.VITE_SERVER_DOMAIN + "/drafts",
+              draftObj,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                withCredentials: true,
+              }
+            );
+
+            // Update store with draftId from response
+            set((state) => ({
+              blog: {
+                ...state.blog,
+                draftId: response.data.draftId,
+                isLocalDraft: false,
+              },
+            }));
+
+            console.log("Draft created:", response.data);
+            toast.success("Draft saved successfully!");
+          }
+
+          return { success: true, data: response.data };
+        } catch (error) {
+          console.error("Error saving draft:", error);
+          toast.error(error.response?.data?.error || "Failed to save draft");
+          return { success: false, error: error.response?.data?.error || "Failed to save draft" };
+        }
+      },
+
+      // Publish blog function
+      publishBlog: async () => {
+        const { blog } = get();
+
+        // Validation for published blogs
+        if (!blog.title || !blog.title.trim()) {
+          toast.error("Blog title is required");
+          return { success: false, error: "Blog title is required" };
+        }
+        if (!blog.description || !blog.description.trim()) {
+          toast.error("Blog description is required");
+          return { success: false, error: "Blog description is required" };
+        }
+        if (blog.description.length < 50) {
+          toast.error("Description should be at least 50 characters");
+          return { success: false, error: "Description too short" };
+        }
+        if (blog.description.length > 200) {
+          toast.error("Description should not exceed 200 characters");
+          return { success: false, error: "Description too long" };
+        }
+
+        const blogObj = {
+          title: blog.title,
+          banner: blog.banner,
+          description: blog.description,
+          content: blog.content,
+          tags: blog.tags,
+          draft: false,
+        };
+
+        try {
+          const response = await axios.post(
+            import.meta.env.VITE_SERVER_DOMAIN + "/create-blog",
+            blogObj,
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+              withCredentials: true,
+            }
+          );
+
+          console.log("Blog created:", response.data);
+          toast.success("Blog published successfully!");
+
+          // Clear localStorage and reset blog state after successful publish
+          set({
+            blog: blogStructure,
+            editorState: "editor"
+          });
+
+          return { success: true, data: response.data };
+        } catch (error) {
+          console.error("Error publishing blog:", error);
+          toast.error(error.response?.data?.error || "Failed to publish blog");
+          return { success: false, error: error.response?.data?.error || "Failed to publish blog" };
+        }
+      },
     }),
     {
       name: "blog-editor-storage", // unique name for localStorage key

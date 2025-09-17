@@ -23,6 +23,7 @@ const BlogEditor = () => {
   const { title, banner, content, tags, description } = blog;
   const updateBlog = useEditorStore((state) => state.updateBlog);
   const setEditorState = useEditorStore((state) => state.setEditorState);
+  const saveDraft = useEditorStore((state) => state.saveDraft);
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -126,8 +127,23 @@ const BlogEditor = () => {
     }
   };
 
-  const handleSaveDraft = () => {
-    toast.success("Draft saved!");
+  const handleSaveDraft = async () => {
+    // Save current editor content before saving draft
+    if (editorRef.current) {
+      try {
+        const data = await editorRef.current.save();
+        updateBlog({ ...blog, content: data });
+
+        // Now save the draft
+        await saveDraft();
+      } catch (error) {
+        console.error("Error saving editor content:", error);
+        toast.error("Failed to save editor content");
+      }
+    } else {
+      // If editor is not ready, just save what we have
+      await saveDraft();
+    }
   };
 
   return (
