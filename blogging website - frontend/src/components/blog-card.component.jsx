@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { formatDate } from "../common/date";
 
 const BlogCard = ({ blog }) => {
   const {
@@ -31,7 +32,7 @@ const BlogCard = ({ blog }) => {
           <p className="line-clamp-1 text-sm text-dark-grey">
             {fullname} @{username}
           </p>
-          <p className="min-w-fit text-sm text-dark-grey">{publishedAt}</p>
+          <p className="min-w-fit text-sm text-dark-grey">{formatDate(publishedAt)}</p>
         </div>
 
         <h1 className="blog-title mb-3">{title}</h1>
@@ -41,14 +42,16 @@ const BlogCard = ({ blog }) => {
         </p>
 
         <div className="flex gap-4 items-center">
-          <span className="btn-light py-1 px-4 text-sm">{tags[0]}</span>
+          {tags && tags.length > 0 && (
+            <span className="btn-light py-1 px-4 text-sm">{tags[0]}</span>
+          )}
           <span className="flex items-center gap-2 text-dark-grey text-sm">
             <i className="fi fi-rr-heart"></i>
-            {total_likes}
+            {total_likes || 0}
           </span>
           <span className="flex items-center gap-2 text-dark-grey text-sm">
             <i className="fi fi-rr-comment-dots"></i>
-            {total_comments}
+            {total_comments || 0}
           </span>
         </div>
       </div>

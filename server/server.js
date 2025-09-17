@@ -468,6 +468,29 @@ server.post("/create-blog", verifyJWT, async (req, res) => {
   }
 });
 
+// Get latest blogs
+server.get("/latest-blogs", async (req, res) => {
+  try {
+    const maxLimit = 5; // Maximum number of blogs to return per request
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || maxLimit, maxLimit);
+    const skip = (page - 1) * limit;
+
+    const blogs = await Blog
+      .find({ draft: false })
+      .populate("author", "personal_info.profile_img personal_info.username personal_info.fullname -_id")
+      .sort({ publishedAt: -1 })
+      .select("blog_id title des banner activity tags publishedAt -_id")
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({ blogs });
+  } catch (error) {
+    console.error("Error fetching latest blogs:", error);
+    res.status(500).json({ error: "Failed to fetch latest blogs" });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
