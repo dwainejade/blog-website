@@ -491,6 +491,26 @@ server.get("/latest-blogs", async (req, res) => {
   }
 });
 
+// Get individual blog by blog_id
+server.get("/get-blog/:blog_id", async (req, res) => {
+  try {
+    const { blog_id } = req.params;
+
+    const blog = await Blog
+      .findOne({ blog_id, draft: false })
+      .populate("author", "personal_info.profile_img personal_info.username personal_info.fullname -_id");
+
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    res.status(200).json({ blog });
+  } catch (error) {
+    console.error("Error fetching blog:", error);
+    res.status(500).json({ error: "Failed to fetch blog" });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
