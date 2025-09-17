@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import useEditorStore from "../stores/editorStore";
 import Nav from "./nav.component";
 
 const PublishForm = () => {
+  const navigate = useNavigate();
+
   // Get data from Zustand store
   const blog = useEditorStore((state) => state.blog);
   const updateBlog = useEditorStore((state) => state.updateBlog);
@@ -100,13 +103,24 @@ const PublishForm = () => {
         },
       });
 
-      toast.success("Blog published successfully!");
       console.log("Blog created:", response.data);
+
+      // Show success message immediately
+      toast.success("Blog published successfully!");
+
+      // Navigate to home page after 2 seconds
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+
     } catch (error) {
       console.error("Error publishing blog:", error);
       toast.error(error.response?.data?.error || "Failed to publish blog");
     } finally {
-      setIsPublishing(false);
+      // Reset loading state after a short delay for both success and error
+      setTimeout(() => {
+        setIsPublishing(false);
+      }, 2000);
     }
   };
 
