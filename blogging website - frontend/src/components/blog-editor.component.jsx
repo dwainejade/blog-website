@@ -27,7 +27,6 @@ const BlogEditor = () => {
   const editorRef = useRef(null);
 
   useEffect(() => {
-    console.log("BlogEditor useEffect triggered, content:", content);
 
     if (!editorRef.current) {
       // Create editor only once
