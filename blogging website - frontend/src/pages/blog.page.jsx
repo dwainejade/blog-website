@@ -1,13 +1,16 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Loader from "../components/loader.component";
 import BlogContent from "../components/blog-content.component";
 import { formatDate } from "../common/date";
 import PageAnimation from "../common/page-animation";
+import useAuthStore from "../stores/authStore";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -79,6 +82,16 @@ const BlogPage = () => {
     activity: { total_likes, total_comments } = {},
   } = blog;
 
+  // Check if current user can edit this blog (owner or admin)
+  const canEdit = isAuthenticated && user && (
+    user.username === username ||
+    user.admin === true
+  );
+
+  const handleEdit = () => {
+    navigate(`/editor/${blog_id}`);
+  };
+
   return (
     <div className="max-w-[900px] center py-10 max-lg:px-[5vw]">
       {banner && (
@@ -108,9 +121,20 @@ const BlogPage = () => {
               <p className="text-dark-grey">@{username}</p>
             </div>
           </div>
-          <p className="text-dark-grey opacity-75 max-sm:mt-6 max-sm:ml-12 max-sm:pl-5">
-            Published on {formatDate(publishedAt)}
-          </p>
+          <div className="flex items-center gap-4 max-sm:mt-6 max-sm:ml-12 max-sm:pl-5">
+            <p className="text-dark-grey opacity-75">
+              Published on {formatDate(publishedAt)}
+            </p>
+            {canEdit && (
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full hover:bg-black/80 transition-colors"
+              >
+                <i className="fi fi-rr-edit"></i>
+                Edit
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

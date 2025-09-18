@@ -12,6 +12,7 @@ const blogStructure = {
   author: { personal_info: {} },
   category: "",
   draftId: null, // null = new draft, string = existing draft
+  blogId: null, // null = new blog, string = existing blog for edit
   isLocalDraft: false, // indicates unsaved local changes
 };
 
@@ -120,6 +121,60 @@ const useEditorStore = create(
         }
       },
 
+      // Load existing blog for editing
+      loadBlogForEdit: async (blogId) => {
+        try {
+          const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
+          const response = await axios.get(
+            `${serverDomain}/get-blog/${blogId}`,
+            {
+              withCredentials: true,
+            }
+          );
+
+          const blog = response.data.blog;
+          console.log("Loaded blog data:", blog);
+          console.log("Blog content:", blog.content);
+
+          // Extract the EditorJS content structure
+          let editorContent = { blocks: [] };
+          if (blog.content && Array.isArray(blog.content) && blog.content.length > 0) {
+            // Content is stored as an array with EditorJS object inside
+            editorContent = blog.content[0];
+          } else if (blog.content && blog.content.blocks) {
+            // Content is already in EditorJS format
+            editorContent = blog.content;
+          }
+
+          console.log("Processed editor content:", editorContent);
+
+          // Set the blog data in the store
+          set({
+            blog: {
+              title: blog.title || "",
+              banner: blog.banner || "",
+              content: editorContent,
+              tags: blog.tags || [],
+              description: blog.des || blog.description || "",
+              author: blog.author,
+              draftId: blog._id,
+              isLocalDraft: false,
+              blogId: blog._id, // Store the original blog ID for updates
+            },
+            editorState: "editor"
+          });
+
+          console.log("Store updated with blog data");
+
+          return { success: true, data: blog };
+        } catch (error) {
+          console.error("Error loading blog for edit:", error);
+          toast.error(error.response?.data?.error || "Failed to load blog for editing");
+          return { success: false, error: error.response?.data?.error || "Failed to load blog" };
+        }
+      },
+
       // Publish blog function
       publishBlog: async () => {
         const { blog } = get();
@@ -152,19 +207,38 @@ const useEditorStore = create(
         };
 
         try {
-          const response = await axios.post(
-            import.meta.env.VITE_SERVER_DOMAIN + "/create-blog",
-            blogObj,
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-              withCredentials: true,
-            }
-          );
+          const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+          let response;
 
-          console.log("Blog created:", response.data);
-          toast.success("Blog published successfully!");
+          if (blog.blogId) {
+            // Update existing blog
+            response = await axios.put(
+              `${serverDomain}/update-blog/${blog.blogId}`,
+              blogObj,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                withCredentials: true,
+              }
+            );
+            console.log("Blog updated:", response.data);
+            toast.success("Blog updated successfully!");
+          } else {
+            // Create new blog
+            response = await axios.post(
+              `${serverDomain}/create-blog`,
+              blogObj,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                withCredentials: true,
+              }
+            );
+            console.log("Blog created:", response.data);
+            toast.success("Blog published successfully!");
+          }
 
           // Clear localStorage and reset blog state after successful publish
           set({

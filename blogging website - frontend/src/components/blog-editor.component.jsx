@@ -27,12 +27,28 @@ const BlogEditor = () => {
   const editorRef = useRef(null);
 
   useEffect(() => {
+    console.log("BlogEditor useEffect triggered, content:", content);
+
     if (!editorRef.current) {
+      // Create editor only once
       editorRef.current = new EditorJS({
         holder: "textEditor",
         data: content,
         tools: tools,
         placeholder: "Write something here",
+      });
+    } else if (content && content.blocks && content.blocks.length > 0) {
+      // Update existing editor with new content
+      editorRef.current.render(content).catch(error => {
+        console.error("Error rendering content:", error);
+        // If render fails, recreate the editor
+        editorRef.current.destroy();
+        editorRef.current = new EditorJS({
+          holder: "textEditor",
+          data: content,
+          tools: tools,
+          placeholder: "Write something here",
+        });
       });
     }
 
@@ -45,7 +61,7 @@ const BlogEditor = () => {
         editorRef.current = null;
       }
     };
-  }, []);
+  }, [content]);
 
   const handleBannerUpload = async (e) => {
     const img = e.target.files[0];

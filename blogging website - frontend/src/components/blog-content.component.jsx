@@ -95,6 +95,25 @@ const BlogContent = ({ content }) => {
               </pre>
             );
 
+          case "embed":
+            return (
+              <div key={index} className="my-8">
+                <div className="relative w-full h-0 pb-[56.25%]">
+                  <iframe
+                    src={block.data.embed}
+                    className="absolute top-0 left-0 w-full h-full rounded-lg border-0"
+                    allowFullScreen
+                    title={block.data.caption || "Embedded content"}
+                  />
+                </div>
+                {block.data.caption && (
+                  <p className="text-center text-dark-grey text-sm mt-2">
+                    {block.data.caption}
+                  </p>
+                )}
+              </div>
+            );
+
           default:
             return (
               <div key={index} className="my-4">
