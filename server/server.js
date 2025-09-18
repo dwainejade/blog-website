@@ -14,7 +14,7 @@ import Blog from "./Schema/Blog.js";
 // dotenv.config();
 
 const server = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password

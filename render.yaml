@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: mern-blog-backend
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_LOCATION
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
