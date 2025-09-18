@@ -3,6 +3,12 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+// Helper function to get the correct server URL
+const getServerDomain = () => {
+  return import.meta.env.VITE_SERVER_DOMAIN ||
+    (import.meta.env.MODE === "development" ? "http://localhost:3000" : "https://leah-blog-backend.onrender.com");
+};
+
 const blogStructure = {
   title: "",
   banner: "",
@@ -76,7 +82,7 @@ const useEditorStore = create(
           if (blog.draftId) {
             // Update existing draft
             response = await axios.put(
-              `${import.meta.env.VITE_SERVER_DOMAIN}/drafts/${blog.draftId}`,
+              `${getServerDomain()}/drafts/${blog.draftId}`,
               draftObj,
               {
                 headers: {
@@ -90,7 +96,7 @@ const useEditorStore = create(
           } else {
             // Create new draft
             response = await axios.post(
-              import.meta.env.VITE_SERVER_DOMAIN + "/drafts",
+              `${getServerDomain()}/drafts`,
               draftObj,
               {
                 headers: {
@@ -124,10 +130,8 @@ const useEditorStore = create(
       // Load existing blog for editing
       loadBlogForEdit: async (blogId) => {
         try {
-          const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
-
           const response = await axios.get(
-            `${serverDomain}/get-blog/${blogId}`,
+            `${getServerDomain()}/get-blog/${blogId}`,
             {
               withCredentials: true,
             }
@@ -202,13 +206,12 @@ const useEditorStore = create(
         };
 
         try {
-          const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
           let response;
 
           if (blog.blogId) {
             // Update existing blog
             response = await axios.put(
-              `${serverDomain}/update-blog/${blog.blogId}`,
+              `${getServerDomain()}/update-blog/${blog.blogId}`,
               blogObj,
               {
                 headers: {
@@ -222,7 +225,7 @@ const useEditorStore = create(
           } else {
             // Create new blog
             response = await axios.post(
-              `${serverDomain}/create-blog`,
+              `${getServerDomain()}/create-blog`,
               blogObj,
               {
                 headers: {
