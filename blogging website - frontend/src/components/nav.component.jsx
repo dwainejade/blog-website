@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import logo from "../imgs/logo.png";
 import useEditorStore from "../stores/editorStore";
 
 const Nav = ({ type = "editor", onSaveDraft, onPublish, isPublishing }) => {
@@ -11,8 +13,12 @@ const Nav = ({ type = "editor", onSaveDraft, onPublish, isPublishing }) => {
   if (type === "editor") {
     return (
       <nav className="navbar">
+        <Link to="/" className="flex-none w-10">
+          <img src={logo} alt="Logo" className="w-full" />
+        </Link>
+
         <p
-          className={`max-md:hidden line-clamp-1 w-full ${
+          className={`max-md:hidden line-clamp-1 w-full ml-4 ${
             blog.title ? "text-black" : "text-red-400"
           }`}
         >
@@ -33,35 +39,41 @@ const Nav = ({ type = "editor", onSaveDraft, onPublish, isPublishing }) => {
 
   if (type === "publish") {
     return (
-      <div className="flex items-center justify-between mb-8">
-        <button
-          className="btn-light py-2 flex items-center gap-2"
-          onClick={handleBackToEditor}
-        >
-          <span className="text-xl">←</span>
-          Back to Editor
-        </button>
+      <nav className="navbar mb-8">
+        <Link to="/" className="flex-none w-10">
+          <img src={logo} alt="Logo" className="w-full" />
+        </Link>
 
-        <div className="flex gap-3">
+        <div className="flex items-center gap-4 ml-auto">
           <button
-            className="btn-light py-2"
-            onClick={onSaveDraft}
-            disabled={isPublishing}
+            className="btn-light py-2 flex items-center gap-2"
+            onClick={handleBackToEditor}
           >
-            Save Draft
+            <span className="text-xl">←</span>
+            Back to Editor
           </button>
-          <button
-            className="btn-dark py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            onClick={onPublish}
-            disabled={isPublishing}
-          >
-            {isPublishing && (
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-            )}
-            {isPublishing ? "Publishing..." : "Publish Now"}
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              className="btn-light py-2"
+              onClick={onSaveDraft}
+              disabled={isPublishing}
+            >
+              Save Draft
+            </button>
+            <button
+              className="btn-dark py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              onClick={onPublish}
+              disabled={isPublishing}
+            >
+              {isPublishing && (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              )}
+              {isPublishing ? "Publishing..." : "Publish Now"}
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
     );
   }
 
