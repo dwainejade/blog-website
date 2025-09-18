@@ -27,36 +27,59 @@ const BlogEditor = () => {
   const editorRef = useRef(null);
 
   useEffect(() => {
+    const initializeEditor = async () => {
+      // Destroy existing editor if it exists
+      if (editorRef.current && typeof editorRef.current.destroy === "function") {
+        try {
+          await editorRef.current.destroy();
+          editorRef.current = null;
+        } catch (error) {
+          console.error("Error destroying editor:", error);
+          editorRef.current = null;
+        }
+      }
 
-    if (!editorRef.current) {
-      // Create editor only once
-      editorRef.current = new EditorJS({
-        holder: "textEditor",
-        data: content,
-        tools: tools,
-        placeholder: "Write something here",
-      });
-    } else if (content && content.blocks && content.blocks.length > 0) {
-      // Update existing editor with new content
-      editorRef.current.render(content).catch(error => {
-        console.error("Error rendering content:", error);
-        // If render fails, recreate the editor
-        editorRef.current.destroy();
+      // Wait for DOM element to be available
+      const textEditorElement = document.getElementById("textEditor");
+      if (!textEditorElement) {
+        console.error("textEditor element not found");
+        return;
+      }
+
+      try {
+        // Create new editor instance
         editorRef.current = new EditorJS({
           holder: "textEditor",
-          data: content,
+          data: content || { blocks: [] },
           tools: tools,
           placeholder: "Write something here",
+          onReady: () => {
+            console.log("Editor.js is ready to work!");
+          },
+          onChange: () => {
+            console.log("Editor content changed");
+          }
         });
-      });
-    }
+      } catch (error) {
+        console.error("Error initializing editor:", error);
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initializeEditor, 100);
 
     return () => {
-      if (
-        editorRef.current &&
-        typeof editorRef.current.destroy === "function"
-      ) {
-        editorRef.current.destroy();
+      clearTimeout(timeoutId);
+      if (editorRef.current && typeof editorRef.current.destroy === "function") {
+        try {
+          const destroyResult = editorRef.current.destroy();
+          // Only call catch if destroy returns a promise
+          if (destroyResult && typeof destroyResult.catch === "function") {
+            destroyResult.catch(console.error);
+          }
+        } catch (error) {
+          console.error("Error destroying editor:", error);
+        }
         editorRef.current = null;
       }
     };

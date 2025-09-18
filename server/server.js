@@ -23,7 +23,11 @@ server.use(express.json());
 server.use(cookieParser());
 server.use(
   cors({
-    origin: ["http://localhost:5173", process.env.FRONTEND_URL].filter(Boolean),
+    origin: [
+      "http://localhost:5173",
+      "https://cycles-and-stage-frontend-7tbrvepa5-dwaine-matthews-projects.vercel.app",
+      process.env.FRONTEND_URL
+    ].filter(Boolean),
     credentials: true,
   })
 );

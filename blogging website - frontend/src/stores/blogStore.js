@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import axios from "axios";
 
+// Helper function to get the correct server URL
+const getServerDomain = () => {
+  return import.meta.env.VITE_SERVER_DOMAIN ||
+    (import.meta.env.MODE === "development" ? "http://localhost:3000" : "https://leah-blog-backend.onrender.com");
+};
+
 const useBlogStore = create((set, get) => ({
   blogs: [],
   userBlogs: [],
@@ -23,10 +29,8 @@ const useBlogStore = create((set, get) => ({
     }
 
     try {
-      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
-
       const response = await axios.get(
-        `${serverDomain}/latest-blogs?page=${page}&limit=${limit}`,
+        `${getServerDomain()}/latest-blogs?page=${page}&limit=${limit}`,
         {
           withCredentials: true,
         }
@@ -78,10 +82,8 @@ const useBlogStore = create((set, get) => ({
   fetchUserBlogs: async () => {
     set({ isLoadingUserBlogs: true, error: null });
     try {
-      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
-
       const response = await axios.get(
-        `${serverDomain}/user-blogs`,
+        `${getServerDomain()}/user-blogs`,
         {
           withCredentials: true,
         }
@@ -110,10 +112,8 @@ const useBlogStore = create((set, get) => ({
   // Delete blog
   deleteBlog: async (blogId) => {
     try {
-      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
-
       await axios.delete(
-        `${serverDomain}/blog/${blogId}`,
+        `${getServerDomain()}/blog/${blogId}`,
         {
           withCredentials: true,
         }
