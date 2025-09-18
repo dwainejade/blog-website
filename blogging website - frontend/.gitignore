@@ -36,3 +36,4 @@ firebase-debug.log*
 
 # Cloudinary
 cloudinary-config.json
+.vercel
