@@ -23,14 +23,24 @@ const useBlogStore = create((set, get) => ({
     }
 
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
+      console.log("Environment:", import.meta.env.MODE);
+      console.log("Server domain from env:", import.meta.env.VITE_SERVER_DOMAIN);
+      console.log("Using server domain:", serverDomain);
+      console.log("Fetching blogs from:", `${serverDomain}/latest-blogs?page=${page}&limit=${limit}`);
+
       const response = await axios.get(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/latest-blogs?page=${page}&limit=${limit}`,
+        `${serverDomain}/latest-blogs?page=${page}&limit=${limit}`,
         {
           withCredentials: true,
         }
       );
 
+      console.log("API Response:", response.data);
       const newBlogs = response.data.blogs || [];
+
+      console.log("Setting blogs:", newBlogs.length, "blogs");
 
       set({
         blogs: page === 1 ? newBlogs : [...blogs, ...newBlogs],
@@ -76,8 +86,10 @@ const useBlogStore = create((set, get) => ({
   fetchUserBlogs: async () => {
     set({ isLoadingUserBlogs: true, error: null });
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
       const response = await axios.get(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/user-blogs`,
+        `${serverDomain}/user-blogs`,
         {
           withCredentials: true,
         }
@@ -106,8 +118,10 @@ const useBlogStore = create((set, get) => ({
   // Delete blog
   deleteBlog: async (blogId) => {
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
       await axios.delete(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/blog/${blogId}`,
+        `${serverDomain}/blog/${blogId}`,
         {
           withCredentials: true,
         }
