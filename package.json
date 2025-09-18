@@ -1,5 +1,5 @@
 {
-  "name": "mern-blogging-website",
+  "name": "cycles-and-stages",
   "version": "1.0.0",
   "scripts": {
     "build": "cd 'blogging website - frontend' && npm run build",
