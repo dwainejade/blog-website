@@ -61,14 +61,14 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
@@ -260,7 +260,10 @@ server.post("/drafts", verifyJWT, async (req, res) => {
     }
 
     // convert and consolidate tags
-    tags = tags && Array.isArray(tags) ? [...new Set(tags.map((tag) => tag.toLowerCase()))] : [];
+    tags =
+      tags && Array.isArray(tags)
+        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+        : [];
 
     // Generate unique blog_id for draft
     let blog_id =
@@ -335,14 +338,17 @@ server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
     }
 
     // convert and consolidate tags
-    tags = tags && Array.isArray(tags) ? [...new Set(tags.map((tag) => tag.toLowerCase()))] : [];
+    tags =
+      tags && Array.isArray(tags)
+        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+        : [];
 
     // Find and update the draft
     const updatedBlog = await Blog.findOneAndUpdate(
       {
         _id: req.params.draftId,
         author: req.user.id,
-        draft: true
+        draft: true,
       },
       {
         title: title.trim(),
@@ -355,7 +361,9 @@ server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
     );
 
     if (!updatedBlog) {
-      return res.status(404).json({ error: "Draft not found or not authorized" });
+      return res
+        .status(404)
+        .json({ error: "Draft not found or not authorized" });
     }
 
     res.status(200).json({
@@ -402,7 +410,10 @@ server.post("/create-blog", verifyJWT, async (req, res) => {
     }
 
     // convert and consolidate tags
-    tags = tags && Array.isArray(tags) ? [...new Set(tags.map((tag) => tag.toLowerCase()))] : [];
+    tags =
+      tags && Array.isArray(tags)
+        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+        : [];
 
     // Generate unique blog_id
     let blog_id =
@@ -476,9 +487,11 @@ server.get("/latest-blogs", async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || maxLimit, maxLimit);
     const skip = (page - 1) * limit;
 
-    const blogs = await Blog
-      .find({ draft: false })
-      .populate("author", "personal_info.profile_img personal_info.username personal_info.fullname -_id")
+    const blogs = await Blog.find({ draft: false })
+      .populate(
+        "author",
+        "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      )
       .sort({ publishedAt: -1 })
       .select("blog_id title des banner activity tags publishedAt -_id")
       .skip(skip)
@@ -496,9 +509,10 @@ server.get("/get-blog/:blog_id", async (req, res) => {
   try {
     const { blog_id } = req.params;
 
-    const blog = await Blog
-      .findOne({ blog_id, draft: false })
-      .populate("author", "personal_info.profile_img personal_info.username personal_info.fullname -_id");
+    const blog = await Blog.findOne({ blog_id, draft: false }).populate(
+      "author",
+      "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+    );
 
     if (!blog) {
       return res.status(404).json({ error: "Blog not found" });
@@ -517,20 +531,18 @@ server.get("/user-blogs", verifyJWT, async (req, res) => {
     const userId = req.user.id;
 
     // Fetch published blogs
-    const publishedBlogs = await Blog
-      .find({ author: userId, draft: false })
+    const publishedBlogs = await Blog.find({ author: userId, draft: false })
       .sort({ publishedAt: -1 })
       .select("blog_id title banner description activity tags publishedAt");
 
     // Fetch drafts
-    const drafts = await Blog
-      .find({ author: userId, draft: true })
+    const drafts = await Blog.find({ author: userId, draft: true })
       .sort({ publishedAt: -1 })
       .select("blog_id title banner description tags publishedAt");
 
     res.status(200).json({
       blogs: publishedBlogs,
-      drafts: drafts
+      drafts: drafts,
     });
   } catch (error) {
     console.error("Error fetching user blogs:", error);
@@ -547,7 +559,7 @@ server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
     // Find and delete the blog (only if user is the author)
     const deletedBlog = await Blog.findOneAndDelete({
       _id: blogId,
-      author: userId
+      author: userId,
     });
 
     if (!deletedBlog) {
@@ -556,7 +568,7 @@ server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
 
     // Remove from user's blogs array and update post count if it was published
     const updateData = {
-      $pull: { blogs: blogId }
+      $pull: { blogs: blogId },
     };
 
     if (!deletedBlog.draft) {

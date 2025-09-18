@@ -6,14 +6,10 @@ import PublishForm from "../components/publish-form.component";
 import useEditorStore from "../stores/editorStore";
 
 const EditorPage = () => {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, isInitialized } = useAuthStore();
   const { editorState, setEditorState } = useEditorStore();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return <div>Loading...</div>;
   }
 

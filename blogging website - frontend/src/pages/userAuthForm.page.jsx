@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AnimationWrapper from "../common/page-animation";
 import InputBox from "../components/input.component";
 import { Toaster, toast } from "react-hot-toast";
@@ -7,6 +7,7 @@ import useAuthStore from "../stores/authStore";
 
 const UserAuthForm = ({ type }) => {
   const authForm = useRef(null);
+  const navigate = useNavigate();
   const { login, signup, isLoading, error } = useAuthStore();
 
   const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
@@ -48,7 +49,7 @@ const UserAuthForm = ({ type }) => {
       } else {
         await signup({ fullname, email, password });
       }
-      window.location.href = "/"; // redirect to home page
+      navigate("/"); // redirect to home page
     } catch (error) {
       toast.error(error.response?.data?.error || "Authentication failed");
     }

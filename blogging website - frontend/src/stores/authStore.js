@@ -1,13 +1,17 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import axios from "axios";
 
 axios.defaults.withCredentials = true;
 
-const useAuthStore = create((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
+const useAuthStore = create(
+  persist(
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      isInitialized: false,
 
   login: async (credentials) => {
     set({ isLoading: true, error: null });
@@ -96,6 +100,7 @@ const useAuthStore = create((set, get) => ({
         user: data,
         isAuthenticated: true,
         isLoading: false,
+        isInitialized: true,
         error: null,
       });
       return true;
@@ -111,6 +116,7 @@ const useAuthStore = create((set, get) => ({
             user: data,
             isAuthenticated: true,
             isLoading: false,
+            isInitialized: true,
             error: null,
           });
           return true;
@@ -122,6 +128,7 @@ const useAuthStore = create((set, get) => ({
         user: null,
         isAuthenticated: false,
         isLoading: false,
+        isInitialized: true,
         error: null,
       });
       return false;
@@ -153,7 +160,17 @@ const useAuthStore = create((set, get) => ({
     const { user } = get();
     return user;
   },
-}));
+    }),
+    {
+      name: "auth-storage",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);
 
 let isRefreshing = false;
 let failedQueue = [];

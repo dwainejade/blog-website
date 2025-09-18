@@ -9,10 +9,10 @@ import DashboardPage from "./pages/dashboard.page";
 import useAuthStore from "./stores/authStore";
 
 const App = () => {
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated, isInitialized, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // Check auth in background, don't block UI
+    // Always check auth on app start to verify persisted state
     checkAuth();
   }, [checkAuth]);
 
