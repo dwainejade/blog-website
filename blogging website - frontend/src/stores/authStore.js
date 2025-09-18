@@ -16,8 +16,10 @@ const useAuthStore = create(
   login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
       const { data } = await axios.post(
-        import.meta.env.VITE_SERVER_DOMAIN + "/signin",
+        `${serverDomain}/signin`,
         credentials
       );
       set({
@@ -39,8 +41,10 @@ const useAuthStore = create(
   signup: async (userData) => {
     set({ isLoading: true, error: null });
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
       const { data } = await axios.post(
-        import.meta.env.VITE_SERVER_DOMAIN + "/signup",
+        `${serverDomain}/signup`,
         userData
       );
       set({
@@ -62,7 +66,9 @@ const useAuthStore = create(
   logout: async () => {
     set({ isLoading: true });
     try {
-      await axios.post(import.meta.env.VITE_SERVER_DOMAIN + "/logout");
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
+      await axios.post(`${serverDomain}/logout`);
       set({
         user: null,
         isAuthenticated: false,
@@ -92,8 +98,10 @@ const useAuthStore = create(
   checkAuth: async () => {
     set({ isLoading: true });
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
       const { data } = await axios.get(
-        import.meta.env.VITE_SERVER_DOMAIN + "/verify",
+        `${serverDomain}/verify`,
         { _skipInterceptor: true }
       );
       set({
@@ -108,7 +116,7 @@ const useAuthStore = create(
       if (error.response?.status === 401) {
         try {
           const { data } = await axios.post(
-            import.meta.env.VITE_SERVER_DOMAIN + "/refresh",
+            `${serverDomain}/refresh`,
             {},
             { _skipInterceptor: true }
           );
@@ -137,8 +145,10 @@ const useAuthStore = create(
 
   refreshToken: async () => {
     try {
+      const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+
       const { data } = await axios.post(
-        import.meta.env.VITE_SERVER_DOMAIN + "/refresh"
+        `${serverDomain}/refresh`
       );
       set({
         user: data,
@@ -209,7 +219,8 @@ axios.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(import.meta.env.VITE_SERVER_DOMAIN + "/refresh");
+        const serverDomain = import.meta.env.VITE_SERVER_DOMAIN || "https://leah-blog-backend.onrender.com";
+        await axios.post(`${serverDomain}/refresh`);
         processQueue(null);
         return axios(originalRequest);
       } catch (refreshError) {

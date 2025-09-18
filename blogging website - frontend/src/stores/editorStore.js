@@ -134,8 +134,6 @@ const useEditorStore = create(
           );
 
           const blog = response.data.blog;
-          console.log("Loaded blog data:", blog);
-          console.log("Blog content:", blog.content);
 
           // Extract the EditorJS content structure
           let editorContent = { blocks: [] };
@@ -146,8 +144,6 @@ const useEditorStore = create(
             // Content is already in EditorJS format
             editorContent = blog.content;
           }
-
-          console.log("Processed editor content:", editorContent);
 
           // Set the blog data in the store
           set({
@@ -165,7 +161,6 @@ const useEditorStore = create(
             editorState: "editor"
           });
 
-          console.log("Store updated with blog data");
 
           return { success: true, data: blog };
         } catch (error) {
