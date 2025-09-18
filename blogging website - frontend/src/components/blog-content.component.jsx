@@ -101,8 +101,7 @@ const BlogContent = ({ content }) => {
                 <div className="relative w-full h-0 pb-[56.25%]">
                   <iframe
                     src={block.data.embed}
-                    className="absolute top-0 left-0 w-full h-full rounded-lg"
-                    frameBorder="0"
+                    className="absolute top-0 left-0 w-full h-full rounded-lg border-0"
                     allowFullScreen
                     title={block.data.caption || "Embedded content"}
                   />

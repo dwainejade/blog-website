@@ -509,7 +509,27 @@ server.get("/get-blog/:blog_id", async (req, res) => {
   try {
     const { blog_id } = req.params;
 
-    const blog = await Blog.findOne({ blog_id, draft: false }).populate(
+    // Check if user is authenticated (optional)
+    const token = req.cookies.accessToken;
+    let userId = null;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        // Token invalid, continue as unauthenticated
+      }
+    }
+
+    // Build query - if user is authenticated, they can see their own drafts
+    let query = { blog_id };
+    if (!userId) {
+      // Unauthenticated users can only see published blogs
+      query.draft = false;
+    }
+
+    const blog = await Blog.findOne(query).populate(
       "author",
       "personal_info.profile_img personal_info.username personal_info.fullname -_id"
     );
@@ -518,10 +538,110 @@ server.get("/get-blog/:blog_id", async (req, res) => {
       return res.status(404).json({ error: "Blog not found" });
     }
 
+    // If blog is a draft, only allow author or admin to view it
+    if (blog.draft && userId) {
+      const user = await User.findById(userId);
+      const isAuthor = blog.author._id.toString() === userId;
+      const isAdmin = user?.admin === true;
+
+      if (!isAuthor && !isAdmin) {
+        return res.status(403).json({ error: "Not authorized to view this draft" });
+      }
+    } else if (blog.draft && !userId) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
     res.status(200).json({ blog });
   } catch (error) {
     console.error("Error fetching blog:", error);
     res.status(500).json({ error: "Failed to fetch blog" });
+  }
+});
+
+// Update existing blog
+server.put("/update-blog/:blogId", verifyJWT, async (req, res) => {
+  try {
+    const { blogId } = req.params;
+    const userId = req.user.id;
+    let { title, banner, description, content, tags, draft } = req.body;
+
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+
+    // For published blogs, validate all fields
+    if (!draft) {
+      if (!description || !description.length) {
+        return res.status(400).json({ error: "Blog description is required" });
+      }
+
+      if (!content || content.blocks.length === 0) {
+        return res.status(400).json({ error: "Blog content is required" });
+      }
+    }
+
+    // Convert and consolidate tags
+    tags =
+      tags && Array.isArray(tags)
+        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+        : [];
+
+    // Find the blog and check authorization
+    const existingBlog = await Blog.findById(blogId).populate(
+      "author",
+      "personal_info.username personal_info.fullname"
+    );
+
+    if (!existingBlog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    // Check if user is the author or admin
+    const user = await User.findById(userId);
+    const isAuthor = existingBlog.author._id.toString() === userId;
+    const isAdmin = user.admin === true;
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to edit this blog" });
+    }
+
+    // Update the blog
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        title: title.trim(),
+        banner: banner || "",
+        description: description || "",
+        content: content || { blocks: [] },
+        tags: tags || [],
+        draft: draft || false,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    ).populate(
+      "author",
+      "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+    );
+
+    res.status(200).json({
+      message: "Blog updated successfully",
+      blog: {
+        blog_id: updatedBlog.blog_id,
+        title: updatedBlog.title,
+        author: updatedBlog.author,
+        publishedAt: updatedBlog.publishedAt,
+        updatedAt: updatedBlog.updatedAt,
+        draft: updatedBlog.draft,
+        content: updatedBlog.content,
+        tags: updatedBlog.tags,
+        description: updatedBlog.description,
+        banner: updatedBlog.banner,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating blog:", error);
+    res.status(500).json({ error: "Failed to update blog" });
   }
 });
 
