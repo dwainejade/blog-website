@@ -26,7 +26,7 @@ server.use(
     origin: [
       "http://localhost:5173",
       "https://cyclesandstages.vercel.app",
-      process.env.FRONTEND_URL
+      process.env.FRONTEND_URL,
     ].filter(Boolean),
     credentials: true,
   })
@@ -557,7 +557,9 @@ server.get("/get-blog/:blog_id", async (req, res) => {
       const isAdmin = user?.admin === true;
 
       if (!isAuthor && !isAdmin) {
-        return res.status(403).json({ error: "Not authorized to view this draft" });
+        return res
+          .status(403)
+          .json({ error: "Not authorized to view this draft" });
       }
     } else if (blog.draft && !userId) {
       return res.status(404).json({ error: "Blog not found" });
@@ -615,7 +617,9 @@ server.put("/update-blog/:blogId", verifyJWT, async (req, res) => {
     const isAdmin = user.admin === true;
 
     if (!isAuthor && !isAdmin) {
-      return res.status(403).json({ error: "Not authorized to edit this blog" });
+      return res
+        .status(403)
+        .json({ error: "Not authorized to edit this blog" });
     }
 
     // Update the blog
