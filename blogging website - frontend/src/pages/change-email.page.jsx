@@ -5,50 +5,48 @@ import InputBox from "../components/input.component";
 import { Toaster, toast } from "react-hot-toast";
 import useAuthStore from "../stores/authStore";
 
-const ChangePassword = () => {
-  const { user, changePassword, isLoading } = useAuthStore();
+const ChangeEmail = () => {
+  const { user, updateEmail, isLoading } = useAuthStore();
   const [showForm, setShowForm] = useState(false);
   const formRef = useRef();
   const navigate = useNavigate();
 
-  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
+  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (user?.google_auth) {
-      return toast.error("Cannot change password for Google authenticated accounts");
+      return toast.error("Cannot change email for Google authenticated accounts");
     }
 
     const formData = new FormData(formRef.current);
-    const { currentPassword, newPassword, confirmPassword } = Object.fromEntries(formData.entries());
+    const { newEmail, confirmEmail, password } = Object.fromEntries(formData.entries());
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newEmail || !confirmEmail || !password) {
       return toast.error("All fields are required");
     }
 
-    if (!passwordRegex.test(newPassword)) {
-      return toast.error(
-        "Password must be 6-20 characters long, contain at least one numeric digit, one uppercase and one lowercase letter"
-      );
+    if (!emailRegex.test(newEmail)) {
+      return toast.error("Please enter a valid email address");
     }
 
-    if (newPassword !== confirmPassword) {
-      return toast.error("New passwords do not match");
+    if (newEmail !== confirmEmail) {
+      return toast.error("Email addresses do not match");
     }
 
-    if (currentPassword === newPassword) {
-      return toast.error("New password must be different from current password");
+    if (newEmail === user?.email) {
+      return toast.error("New email must be different from current email");
     }
 
     try {
-      const result = await changePassword({
-        currentPassword,
-        newPassword,
+      const result = await updateEmail({
+        email: newEmail,
+        password,
       });
 
       if (result.success) {
-        toast.success("Password changed successfully");
+        toast.success(result.message || "Email updated successfully");
         setTimeout(() => {
           navigate("/settings/edit-profile");
         }, 1500);
@@ -56,13 +54,13 @@ const ChangePassword = () => {
         toast.error(result.error);
       }
     } catch (error) {
-      toast.error("Error changing password");
+      toast.error("Error updating email");
     }
   };
 
   const handleShowForm = () => {
     if (user?.google_auth) {
-      return toast.error("Cannot change password for Google authenticated accounts");
+      return toast.error("Cannot change email for Google authenticated accounts");
     }
     setShowForm(true);
   };
@@ -71,7 +69,7 @@ const ChangePassword = () => {
     <AnimationWrapper>
       <Toaster />
       <div className="max-w-md mx-auto py-10">
-        <h1 className="text-2xl font-gelasio text-center mb-8">Change Password</h1>
+        <h1 className="text-2xl font-gelasio text-center mb-8">Change Email Address</h1>
 
         {user?.google_auth && (
           <div className="bg-red/10 border border-red/20 rounded-lg p-4 mb-6">
@@ -80,27 +78,34 @@ const ChangePassword = () => {
               <div>
                 <h3 className="font-medium text-red">Google Account</h3>
                 <p className="text-sm text-dark-grey">
-                  You cannot change the password for Google authenticated accounts.
-                  Please use Google's account settings to manage your password.
+                  You cannot change the email for Google authenticated accounts.
+                  Please use Google's account settings to manage your email.
                 </p>
               </div>
             </div>
           </div>
         )}
 
+        {user?.email && (
+          <div className="bg-grey/10 border border-grey/20 rounded-lg p-4 mb-6">
+            <h3 className="font-medium mb-2 text-sm">Current Email:</h3>
+            <p className="text-dark-grey text-sm">{user.email}</p>
+          </div>
+        )}
+
         {!showForm && !user?.google_auth && (
           <div className="text-center">
             <div className="bg-yellow/10 border border-yellow/20 rounded-lg p-6 mb-6">
-              <i className="fi fi-rr-shield-check text-yellow text-3xl mb-4"></i>
-              <h3 className="font-medium mb-2">Security Verification</h3>
+              <i className="fi fi-rr-envelope-open text-yellow text-3xl mb-4"></i>
+              <h3 className="font-medium mb-2">Email Change Verification</h3>
               <p className="text-sm text-dark-grey mb-4">
-                For your security, please verify your identity before changing your password.
+                For security reasons, you'll need to verify your current password to change your email address.
               </p>
               <button
                 onClick={handleShowForm}
                 className="btn-dark px-6 py-2 rounded-md"
               >
-                Proceed to Change Password
+                Proceed to Change Email
               </button>
             </div>
           </div>
@@ -110,34 +115,33 @@ const ChangePassword = () => {
           <form ref={formRef} onSubmit={handleSubmit}>
             <div className="mb-6">
               <InputBox
-                name="currentPassword"
+                name="newEmail"
+                type="email"
+                placeholder="New Email Address"
+                icon="fi-rr-envelope"
+              />
+
+              <InputBox
+                name="confirmEmail"
+                type="email"
+                placeholder="Confirm New Email Address"
+                icon="fi-rr-envelope"
+              />
+
+              <InputBox
+                name="password"
                 type="password"
                 placeholder="Current Password"
                 icon="fi-rr-lock"
               />
-
-              <InputBox
-                name="newPassword"
-                type="password"
-                placeholder="New Password"
-                icon="fi-rr-lock"
-              />
-
-              <InputBox
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm New Password"
-                icon="fi-rr-lock"
-              />
             </div>
 
-            <div className="mb-6 bg-grey/10 border border-grey/20 rounded-lg p-4">
-              <h4 className="font-medium mb-2 text-sm">Password Requirements:</h4>
+            <div className="mb-6 bg-blue/10 border border-blue/20 rounded-lg p-4">
+              <h4 className="font-medium mb-2 text-sm text-blue">Important:</h4>
               <ul className="text-xs text-dark-grey space-y-1">
-                <li>" 6-20 characters long</li>
-                <li>" At least one uppercase letter</li>
-                <li>" At least one lowercase letter</li>
-                <li>" At least one numeric digit</li>
+                <li>• Make sure you have access to the new email address</li>
+                <li>• You'll be logged out after changing your email</li>
+                <li>• Use the new email for future logins</li>
               </ul>
             </div>
 
@@ -147,7 +151,7 @@ const ChangePassword = () => {
                 disabled={isLoading}
                 className="btn-dark px-6 py-2 rounded-md disabled:opacity-50 flex-1"
               >
-                {isLoading ? "Changing..." : "Change Password"}
+                {isLoading ? "Updating..." : "Update Email"}
               </button>
 
               <button
@@ -174,9 +178,9 @@ const ChangePassword = () => {
         {!user?.google_auth && (
           <div className="mt-6 text-center">
             <p className="text-xs text-dark-grey">
-              Forgot your current password?{" "}
-              <Link to="/forgot-password" className="text-purple hover:underline">
-                Reset it here
+              Having trouble?{" "}
+              <Link to="/contact-support" className="text-purple hover:underline">
+                Contact Support
               </Link>
             </p>
           </div>
@@ -186,4 +190,4 @@ const ChangePassword = () => {
   );
 };
 
-export default ChangePassword;
+export default ChangeEmail;

@@ -6,11 +6,12 @@ import BlogContent from "../components/blog-content.component";
 import { formatDate } from "../common/date";
 import PageAnimation from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
+import EditorNav from "../components/editor-nav.component";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuthStore();
+  // const navigate = useNavigate();
+  // const { user, isAuthenticated } = useAuthStore();
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,18 +83,15 @@ const BlogPage = () => {
     activity: { total_likes, total_comments } = {},
   } = blog;
 
-  // Check if current user can edit this blog (owner or admin)
-  const canEdit = isAuthenticated && user && (
-    user.username === username ||
-    user.admin === true
-  );
-
-  const handleEdit = () => {
-    navigate(`/editor/${blog_id}`);
-  };
-
   return (
-    <div className="max-w-[900px] center py-10 max-lg:px-[5vw]">
+    <div className="max-w-[900px] center py-4 max-lg:px-[5vw]">
+      <EditorNav
+        type="blog"
+        blogTitle={title}
+        blogId={blog_id}
+        authorUsername={username}
+      />
+
       {banner && (
         <div className="aspect-video bg-white border-4 border-grey mb-8">
           <img
@@ -125,15 +123,6 @@ const BlogPage = () => {
             <p className="text-dark-grey opacity-75">
               Published on {formatDate(publishedAt)}
             </p>
-            {canEdit && (
-              <button
-                onClick={handleEdit}
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full hover:bg-black/80 transition-colors"
-              >
-                <i className="fi fi-rr-edit"></i>
-                Edit
-              </button>
-            )}
           </div>
         </div>
       </div>

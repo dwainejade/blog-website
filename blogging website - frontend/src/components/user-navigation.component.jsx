@@ -79,7 +79,7 @@ const UserNavigationPanel = ({ show, hide }) => {
         </Link>
 
         <Link
-          to="/dashboard/settings"
+          to="/settings/edit-profile"
           className="flex gap-2 link pl-8 py-4"
           onClick={handleLinkClick}
         >
