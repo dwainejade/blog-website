@@ -78,10 +78,10 @@ const PublishForm = () => {
       const result = await publishBlog();
 
       if (result.success) {
-        // Navigate to home page after 2 seconds
+        // Navigate to home page after 0.5 seconds
         setTimeout(() => {
           navigate("/");
-        }, 2000);
+        }, 500);
       }
     } finally {
       // Reset loading state after a short delay for both success and error
