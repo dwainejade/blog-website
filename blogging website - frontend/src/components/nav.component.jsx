@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../imgs/logo.png";
-import useEditorStore from "../stores/editorStore";
 import useAuthStore from "../stores/authStore";
 import UserNavigationPanel from "./user-navigation.component";
 
-const Nav = ({ type = "editor", isPublishing }) => {
+const Nav = ({ type = "editor" }) => {
   const [userPanelOpen, setUserPanelOpen] = useState(false);
   const { user, isAuthenticated } = useAuthStore();
 

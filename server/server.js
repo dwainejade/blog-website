@@ -88,7 +88,7 @@ const verifyJWT = (req, res, next) => {
     if (err) {
       return res.status(401).json({ error: "Access token is invalid" });
     }
-    req.user = decoded;
+    req.user = decoded.id; // Extract just the user ID
     next();
   });
 };
@@ -717,6 +717,218 @@ server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
   } catch (error) {
     console.error("Error deleting blog:", error);
     res.status(500).json({ error: "Failed to delete blog" });
+  }
+});
+
+// Profile management endpoints
+server.put("/update-profile", verifyJWT, async (req, res) => {
+  try {
+    console.log("Update profile request - userId:", req.user);
+    console.log("Update profile request - body:", req.body);
+
+    const userId = req.user;
+    const { fullname, username, bio, social_links } = req.body;
+
+    // Validation
+    if (fullname && fullname.length < 3) {
+      return res.status(400).json({ error: "Fullname must be at least 3 characters long" });
+    }
+
+    if (username && username.length < 3) {
+      return res.status(400).json({ error: "Username must be at least 3 characters long" });
+    }
+
+    if (bio && bio.length > 200) {
+      return res.status(400).json({ error: "Bio should not be more than 200 characters" });
+    }
+
+    // Check if username is already taken (if updating username)
+    if (username) {
+      const existingUser = await User.findOne({ "personal_info.username": username, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(400).json({ error: "Username is already taken" });
+      }
+    }
+
+    // Prepare update object
+    const updateData = {};
+    if (fullname) updateData["personal_info.fullname"] = fullname;
+    if (username) updateData["personal_info.username"] = username;
+    if (bio !== undefined) updateData["personal_info.bio"] = bio;
+    if (social_links) {
+      Object.keys(social_links).forEach(platform => {
+        updateData[`social_links.${platform}`] = social_links[platform];
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select("-personal_info.password -google_auth -updatedAt -blogs");
+
+    // Return flattened user data to match frontend expectations
+    const flattenedUser = {
+      id: updatedUser._id,
+      fullname: updatedUser.personal_info?.fullname || "",
+      username: updatedUser.personal_info?.username || "",
+      email: updatedUser.personal_info?.email || "",
+      bio: updatedUser.personal_info?.bio || "",
+      profile_img: updatedUser.personal_info?.profile_img || "",
+      ...(updatedUser.social_links || {})
+    };
+
+    res.status(200).json({ user: flattenedUser });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "Username is already taken" });
+    }
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+server.put("/update-profile-img", verifyJWT, async (req, res) => {
+  try {
+    const userId = req.user;
+    const { profile_img } = req.body;
+
+    if (!profile_img) {
+      return res.status(400).json({ error: "Profile image URL is required" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { "personal_info.profile_img": profile_img } },
+      { new: true }
+    ).select("-personal_info.password -google_auth -updatedAt -blogs");
+
+    // Return flattened user data
+    const flattenedUser = {
+      id: updatedUser._id,
+      fullname: updatedUser.personal_info.fullname,
+      username: updatedUser.personal_info.username,
+      email: updatedUser.personal_info.email,
+      bio: updatedUser.personal_info.bio,
+      profile_img: updatedUser.personal_info.profile_img,
+      ...updatedUser.social_links
+    };
+
+    res.status(200).json({ user: flattenedUser });
+  } catch (error) {
+    console.error("Error updating profile image:", error);
+    res.status(500).json({ error: "Failed to update profile image" });
+  }
+});
+
+server.put("/change-password", verifyJWT, async (req, res) => {
+  try {
+    const userId = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current and new passwords are required" });
+    }
+
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        error: "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letters"
+      });
+    }
+
+    // Get user with password
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if user has Google auth (no password to change)
+    if (user.google_auth) {
+      return res.status(400).json({ error: "Cannot change password for Google authenticated accounts" });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.personal_info.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ error: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await User.findByIdAndUpdate(userId, {
+      $set: { "personal_info.password": hashedNewPassword }
+    });
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+});
+
+server.put("/update-email", verifyJWT, async (req, res) => {
+  try {
+    const userId = req.user;
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Get user with password
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if user has Google auth
+    if (user.google_auth) {
+      return res.status(400).json({ error: "Cannot change email for Google authenticated accounts" });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.personal_info.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: "Password is incorrect" });
+    }
+
+    // Check if email is already taken
+    const existingUser = await User.findOne({ "personal_info.email": email, _id: { $ne: userId } });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+
+    // Update email
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { "personal_info.email": email } },
+      { new: true }
+    ).select("-personal_info.password -google_auth -updatedAt -blogs");
+
+    // Return flattened user data
+    const flattenedUser = {
+      id: updatedUser._id,
+      fullname: updatedUser.personal_info.fullname,
+      username: updatedUser.personal_info.username,
+      email: updatedUser.personal_info.email,
+      bio: updatedUser.personal_info.bio,
+      profile_img: updatedUser.personal_info.profile_img,
+      ...updatedUser.social_links
+    };
+
+    res.status(200).json({ user: flattenedUser, message: "Email updated successfully" });
+  } catch (error) {
+    console.error("Error updating email:", error);
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+    res.status(500).json({ error: "Failed to update email" });
   }
 });
 

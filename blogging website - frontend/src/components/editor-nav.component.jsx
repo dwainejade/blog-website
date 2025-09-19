@@ -1,9 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import useEditorStore from "../stores/editorStore";
+import useAuthStore from "../stores/authStore";
 
-const EditorNav = ({ onSaveDraft, onPublish, isPublishing, blogTitle }) => {
+const EditorNav = ({
+  onSaveDraft,
+  onPublish,
+  isPublishing,
+  blogTitle,
+  type = "editor",
+  blogId,
+  authorUsername,
+}) => {
   const navigate = useNavigate();
   const { editorState, setEditorState } = useEditorStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   const handleBack = () => {
     if (editorState === "publish") {
@@ -13,6 +23,52 @@ const EditorNav = ({ onSaveDraft, onPublish, isPublishing, blogTitle }) => {
     }
   };
 
+  const handleEdit = () => {
+    if (blogId) {
+      navigate(`/editor/${blogId}`);
+    }
+  };
+
+  // Check if current user can edit this blog (owner or admin)
+  const canEdit =
+    isAuthenticated &&
+    user &&
+    (user.username === authorUsername || user.admin === true);
+
+  // Render different content based on type
+  if (type === "blog") {
+    return (
+      <nav className="w-full mb-8 flex items-center justify-between relative">
+        <button
+          className="btn-light py-2 px-4 flex items-center gap-2"
+          onClick={handleBack}
+        >
+          <span className="text-xl">←</span>
+          Back
+        </button>
+
+        <div className="flex-1 text-center">
+          <p className="text-gray-600 font-medium line-clamp-1">
+            {/* {blogTitle || "Blog Post"} */}
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          {canEdit && (
+            <button
+              onClick={handleEdit}
+              className="btn-dark py-2 px-4 flex items-center gap-2 hover:bg-black/80 transition-colors"
+            >
+              <i className="fi fi-rr-edit"></i>
+              Edit
+            </button>
+          )}
+        </div>
+      </nav>
+    );
+  }
+
+  // Default editor/publish type
   return (
     <nav className="w-full mb-8 flex items-center justify-between relative">
       <button
@@ -24,7 +80,7 @@ const EditorNav = ({ onSaveDraft, onPublish, isPublishing, blogTitle }) => {
       </button>
 
       <div className="flex-1 text-center">
-        <p className="text-amber-600 font-medium text-2xl">Editing...</p>
+        <p className="text-gray-600 font-medium line-clamp-1 ">Editing</p>
       </div>
 
       <div className="flex gap-3">

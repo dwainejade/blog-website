@@ -166,6 +166,83 @@ const useAuthStore = create(
     const { user } = get();
     return user;
   },
+
+  // Profile management functions
+  updateProfile: async (profileData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.put(
+        `${getServerDomain()}/update-profile`,
+        profileData
+      );
+      set({
+        user: data.user,
+        isLoading: false,
+        error: null,
+      });
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "Failed to update profile";
+      set({ isLoading: false, error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  updateProfileImage: async (imageUrl) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.put(
+        `${getServerDomain()}/update-profile-img`,
+        { profile_img: imageUrl }
+      );
+      set({
+        user: data.user,
+        isLoading: false,
+        error: null,
+      });
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "Failed to update profile image";
+      set({ isLoading: false, error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  changePassword: async (passwordData) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.put(
+        `${getServerDomain()}/change-password`,
+        passwordData
+      );
+      set({ isLoading: false, error: null });
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "Failed to change password";
+      set({ isLoading: false, error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  updateEmail: async (emailData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.put(
+        `${getServerDomain()}/update-email`,
+        emailData
+      );
+      set({
+        user: data.user,
+        isLoading: false,
+        error: null,
+      });
+      return { success: true, message: data.message };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "Failed to update email";
+      set({ isLoading: false, error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  },
     }),
     {
       name: "auth-storage",
