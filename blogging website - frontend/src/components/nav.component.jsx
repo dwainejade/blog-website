@@ -1,14 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../imgs/logo.png";
 import useEditorStore from "../stores/editorStore";
+import useAuthStore from "../stores/authStore";
+import UserNavigationPanel from "./user-navigation.component";
 
-const Nav = ({ type = "editor", onSaveDraft, onPublish, isPublishing }) => {
-  const blog = useEditorStore((state) => state.blog);
-  const setEditorState = useEditorStore((state) => state.setEditorState);
-
-  const handleBackToEditor = () => {
-    setEditorState("editor");
-  };
+const Nav = ({ type = "editor", isPublishing }) => {
+  const [userPanelOpen, setUserPanelOpen] = useState(false);
+  const { user, isAuthenticated } = useAuthStore();
 
   if (type === "editor") {
     return (
@@ -17,21 +16,39 @@ const Nav = ({ type = "editor", onSaveDraft, onPublish, isPublishing }) => {
           <img src={logo} alt="Logo" className="w-full" />
         </Link>
 
-        <p
-          className={`max-md:hidden line-clamp-1 w-full ml-4 ${
-            blog.title ? "text-black" : "text-red-400"
-          }`}
-        >
-          {blog.title ? blog.title : "New Blog"}
-        </p>
+        <div className="flex items-center gap-3 md:gap-6 ml-auto">
+          {isAuthenticated && (
+            <>
+              {userPanelOpen && (
+                <UserNavigationPanel
+                  show={userPanelOpen}
+                  hide={() => setUserPanelOpen(false)}
+                />
+              )}
 
-        <div className="flex gap-4 ml-auto">
-          <button className="btn-light py-2" onClick={onSaveDraft}>
-            Save Draft
-          </button>
-          <button className="btn-dark py-2" onClick={onPublish}>
-            Publish
-          </button>
+              <div className="flex items-center gap-3">
+                <Link to={`/dashboard/notification`}>
+                  <button className="w-12 h-12 rounded-full bg-grey flex items-center justify-center relative hover:bg-black/20">
+                    <i className="fi fi-rr-bell"></i>
+                  </button>
+                </Link>
+
+                <div className="relative">
+                  <button
+                    className="w-12 h-12 mt-1"
+                    id="user-avatar-btn"
+                    onClick={() => setUserPanelOpen(!userPanelOpen)}
+                  >
+                    <img
+                      src={user?.profile_img}
+                      alt="Avatar"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </nav>
     );
@@ -39,39 +56,44 @@ const Nav = ({ type = "editor", onSaveDraft, onPublish, isPublishing }) => {
 
   if (type === "publish") {
     return (
-      <nav className="navbar mb-8">
+      <nav className="navbar">
         <Link to="/" className="flex-none w-10">
           <img src={logo} alt="Logo" className="w-full" />
         </Link>
 
-        <div className="flex items-center gap-4 ml-auto">
-          <button
-            className="btn-light py-2 flex items-center gap-2"
-            onClick={handleBackToEditor}
-          >
-            <span className="text-xl">←</span>
-            Back to Editor
-          </button>
-
-          <div className="flex gap-3">
-            <button
-              className="btn-light py-2"
-              onClick={onSaveDraft}
-              disabled={isPublishing}
-            >
-              Save Draft
-            </button>
-            <button
-              className="btn-dark py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              onClick={onPublish}
-              disabled={isPublishing}
-            >
-              {isPublishing && (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+        <div className="flex items-center gap-3 md:gap-6 ml-auto">
+          {isAuthenticated && (
+            <>
+              {userPanelOpen && (
+                <UserNavigationPanel
+                  show={userPanelOpen}
+                  hide={() => setUserPanelOpen(false)}
+                />
               )}
-              {isPublishing ? "Publishing..." : "Publish Now"}
-            </button>
-          </div>
+
+              <div className="flex items-center gap-3">
+                <Link to={`/dashboard/notification`}>
+                  <button className="w-12 h-12 rounded-full bg-grey flex items-center justify-center relative hover:bg-black/20">
+                    <i className="fi fi-rr-bell"></i>
+                  </button>
+                </Link>
+
+                <div className="relative">
+                  <button
+                    className="w-12 h-12 mt-1"
+                    id="user-avatar-btn"
+                    onClick={() => setUserPanelOpen(!userPanelOpen)}
+                  >
+                    <img
+                      src={user?.profile_img}
+                      alt="Avatar"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </nav>
     );

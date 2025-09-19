@@ -6,6 +6,7 @@ import { Toaster, toast } from "react-hot-toast";
 import useEditorStore from "../stores/editorStore";
 import EditorJS from "@editorjs/editorjs";
 import { tools } from "./tools.component";
+import EditorNav from "./editor-nav.component";
 import Nav from "./nav.component";
 
 // const blogStructure = {
@@ -187,16 +188,18 @@ const BlogEditor = () => {
   return (
     <>
       <Toaster position="top-center" />
-      <Nav
-        type="editor"
-        onSaveDraft={handleSaveDraft}
-        onPublish={handlePublishBlog}
-      />
+      <Nav type="editor" />
 
       <AnimationWrapper>
         <section>
           <div className="mx-auto max-w-[900px] w-full">
-            <div className="relative aspect-video bg-white border-4 border-grey hover-opacity-80">
+            <EditorNav
+              onSaveDraft={handleSaveDraft}
+              onPublish={handlePublishBlog}
+              blogTitle={title}
+            />
+
+            <div className="relative aspect-video bg-white border-4 border-grey hover-opacity-80 mt-4">
               <label
                 htmlFor="uploadBanner"
                 className={`cursor-pointer ${

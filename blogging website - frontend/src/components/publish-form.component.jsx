@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import useEditorStore from "../stores/editorStore";
 import Nav from "./nav.component";
+import EditorNav from "./editor-nav.component";
 
 const PublishForm = () => {
   const navigate = useNavigate();
@@ -109,16 +110,17 @@ const PublishForm = () => {
   return (
     <div className="min-h-screen bg-white">
       <Toaster />
+      <Nav type="publish" />
+
       <section className="relative w-full max-w-[900px] mx-auto p-6">
-        {/* Header */}
-        <Nav
-          type="publish"
+        <EditorNav
           onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
           isPublishing={isPublishing}
+          blogTitle={title}
         />
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-8 mt-4">
           {/* Preview Section */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700">

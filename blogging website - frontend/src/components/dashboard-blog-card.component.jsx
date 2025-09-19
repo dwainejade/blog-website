@@ -15,7 +15,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
     publishedAt,
     activity,
     tags,
-    draft
+    draft,
   } = blog;
 
   const handleEdit = () => {
@@ -77,9 +77,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
           <div className="flex items-center gap-2 flex-none">
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
-                draft
-                  ? "bg-yellow/20 text-yellow"
-                  : "bg-green/20 text-green"
+                draft ? "bg-yellow/20 text-yellow" : "bg-green/20 text-green"
               }`}
             >
               {draft ? "Draft" : "Published"}
@@ -129,9 +127,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
 
         {/* Blog Meta */}
         <div className="flex items-center gap-4 text-sm text-dark-grey mb-3">
-          <span>
-            {getDay(publishedAt)}
-          </span>
+          <span>{getDay(publishedAt)}</span>
           {!draft && activity && (
             <>
               <span className="flex items-center gap-1">

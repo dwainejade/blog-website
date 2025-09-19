@@ -83,10 +83,10 @@ const BlogPage = () => {
   } = blog;
 
   // Check if current user can edit this blog (owner or admin)
-  const canEdit = isAuthenticated && user && (
-    user.username === username ||
-    user.admin === true
-  );
+  const canEdit =
+    isAuthenticated &&
+    user &&
+    (user.username === username || user.admin === true);
 
   const handleEdit = () => {
     navigate(`/editor/${blog_id}`);
