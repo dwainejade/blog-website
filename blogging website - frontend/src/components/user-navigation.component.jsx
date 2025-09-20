@@ -61,7 +61,7 @@ const UserNavigationPanel = ({ show, hide }) => {
         </Link>
 
         <Link
-          to={`/user/${username}`}
+          to="/profile"
           className="flex gap-2 link pl-8 py-4 link"
           onClick={handleLinkClick}
         >
@@ -76,15 +76,6 @@ const UserNavigationPanel = ({ show, hide }) => {
         >
           <i className="fi fi-rr-bell text-xl" />
           <p>Notifications</p>
-        </Link>
-
-        <Link
-          to="/settings/edit-profile"
-          className="flex gap-2 link pl-8 py-4"
-          onClick={handleLinkClick}
-        >
-          <i className="fi fi-rr-settings text-xl" />
-          <p>Settings</p>
         </Link>
 
         <button onClick={logout} className="text-left w-full pl-8 flex gap-2">
