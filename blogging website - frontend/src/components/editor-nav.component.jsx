@@ -76,12 +76,8 @@ const EditorNav = ({
         onClick={handleBack}
       >
         <span className="text-xl">←</span>
-        {editorState === "publish" ? "Back to Editor" : "Back"}
+        Back
       </button>
-
-      <div className="flex-1 text-center">
-        <p className="text-gray-600 font-medium line-clamp-1 ">Editing</p>
-      </div>
 
       <div className="flex gap-3">
         <button
