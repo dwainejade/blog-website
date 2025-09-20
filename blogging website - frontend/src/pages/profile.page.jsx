@@ -88,7 +88,7 @@ const ProfilePage = () => {
     const { name, value } = e.target;
     if (name.startsWith("social_")) {
       const platform = name.replace("social_", "");
-      setProfileData(prev => ({
+      setProfileData((prev) => ({
         ...prev,
         social_links: {
           ...prev.social_links,
@@ -96,7 +96,7 @@ const ProfilePage = () => {
         },
       }));
     } else {
-      setProfileData(prev => ({
+      setProfileData((prev) => ({
         ...prev,
         [name]: value,
       }));
@@ -168,11 +168,10 @@ const ProfilePage = () => {
   return (
     <AnimationWrapper>
       <Toaster />
-      <div className="max-w-4xl mx-auto py-10">
-
+      <div className="max-w-4xl mx-auto py-10 px-4">
         {/* Header with Edit Toggle */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-gelasio">My Profile</h1>
+          {/* <h1 className="text-3xl font-gelasio">My Profile</h1> */}
           <div className="flex gap-3">
             {!isEditing ? (
               <button
@@ -203,7 +202,6 @@ const ProfilePage = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-10">
-
           {/* Left Column - Profile Image & Basic Info */}
           <div>
             {/* Profile Image Section */}
@@ -229,7 +227,9 @@ const ProfilePage = () => {
                 )}
               </div>
               {isEditing && (
-                <p className="text-sm text-dark-grey mt-2">Click to change profile picture</p>
+                <p className="text-sm text-dark-grey mt-2">
+                  Click to change profile picture
+                </p>
               )}
               <input
                 ref={fileInputRef}
@@ -244,7 +244,9 @@ const ProfilePage = () => {
             <div className="space-y-6">
               {/* Full Name */}
               <div>
-                <label className="text-sm font-medium text-dark-grey">Full Name</label>
+                <label className="text-sm font-medium text-dark-grey">
+                  Full Name
+                </label>
                 {isEditing ? (
                   <InputBox
                     name="fullname"
@@ -255,13 +257,17 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                   />
                 ) : (
-                  <p className="text-lg font-medium mt-1">{profileData.fullname || "Not provided"}</p>
+                  <p className="text-lg font-medium mt-1">
+                    {profileData.fullname || "Not provided"}
+                  </p>
                 )}
               </div>
 
               {/* Username */}
               <div>
-                <label className="text-sm font-medium text-dark-grey">Username</label>
+                <label className="text-sm font-medium text-dark-grey">
+                  Username
+                </label>
                 {isEditing ? (
                   <InputBox
                     name="username"
@@ -272,13 +278,17 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                   />
                 ) : (
-                  <p className="text-lg font-medium mt-1">@{profileData.username || "Not set"}</p>
+                  <p className="text-lg font-medium mt-1">
+                    @{profileData.username || "Not set"}
+                  </p>
                 )}
               </div>
 
               {/* Bio */}
               <div>
-                <label className="text-sm font-medium text-dark-grey">Bio</label>
+                <label className="text-sm font-medium text-dark-grey">
+                  Bio
+                </label>
                 {isEditing ? (
                   <div className="relative w-full mb-4">
                     <textarea
@@ -309,39 +319,43 @@ const ProfilePage = () => {
             <div className="mb-8">
               <h3 className="text-xl font-medium mb-6">Social Links</h3>
               <div className="space-y-4">
-                {Object.entries(profileData.social_links).map(([platform, url]) => (
-                  <div key={platform}>
-                    <label className="text-sm font-medium text-dark-grey capitalize">
-                      {platform}
-                    </label>
-                    {isEditing ? (
-                      <InputBox
-                        name={`social_${platform}`}
-                        type="url"
-                        placeholder={`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`}
-                        icon={`fi-brands-${platform}`}
-                        value={url}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      <div className="mt-1">
-                        {url ? (
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple hover:underline flex items-center gap-2"
-                          >
-                            <i className={`fi fi-brands-${platform}`}></i>
-                            {url}
-                          </a>
-                        ) : (
-                          <p className="text-dark-grey">Not provided</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {Object.entries(profileData.social_links).map(
+                  ([platform, url]) => (
+                    <div key={platform}>
+                      <label className="text-sm font-medium text-dark-grey capitalize">
+                        {platform}
+                      </label>
+                      {isEditing ? (
+                        <InputBox
+                          name={`social_${platform}`}
+                          type="url"
+                          placeholder={`${
+                            platform.charAt(0).toUpperCase() + platform.slice(1)
+                          } URL`}
+                          icon={`fi-brands-${platform}`}
+                          value={url}
+                          onChange={handleInputChange}
+                        />
+                      ) : (
+                        <div className="mt-1">
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-purple hover:underline flex items-center gap-2"
+                            >
+                              <i className={`fi fi-brands-${platform}`}></i>
+                              {url}
+                            </a>
+                          ) : (
+                            <p className="text-dark-grey">Not provided</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
             </div>
 
@@ -356,7 +370,9 @@ const ProfilePage = () => {
                   <i className="fi fi-rr-lock text-lg text-purple"></i>
                   <div>
                     <h4 className="font-medium">Change Password</h4>
-                    <p className="text-sm text-dark-grey">Update your account password</p>
+                    <p className="text-sm text-dark-grey">
+                      Update your account password
+                    </p>
                   </div>
                   <i className="fi fi-rr-angle-right ml-auto text-dark-grey"></i>
                 </Link>
@@ -368,7 +384,9 @@ const ProfilePage = () => {
                   <i className="fi fi-rr-envelope text-lg text-purple"></i>
                   <div>
                     <h4 className="font-medium">Change Email</h4>
-                    <p className="text-sm text-dark-grey">Update your email address</p>
+                    <p className="text-sm text-dark-grey">
+                      Update your email address
+                    </p>
                   </div>
                   <i className="fi fi-rr-angle-right ml-auto text-dark-grey"></i>
                 </Link>
