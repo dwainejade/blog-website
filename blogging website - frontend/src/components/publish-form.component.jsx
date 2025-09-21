@@ -14,7 +14,6 @@ const PublishForm = () => {
   const saveDraft = useEditorStore((state) => state.saveDraft);
   const publishBlog = useEditorStore((state) => state.publishBlog);
   const { banner, title, tags, description } = blog;
-  const setEditorState = useEditorStore((state) => state.setEditorState);
 
   const [formData, setFormData] = useState({
     category: "",

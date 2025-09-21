@@ -7,6 +7,7 @@ import Quote from "@editorjs/quote";
 import InlineCode from "@editorjs/inline-code";
 import Marker from "@editorjs/marker";
 import Link from "@editorjs/link";
+import InlineImage from "editorjs-inline-image";
 import { uploadImageToCloudinary } from "../utils/cloudinary";
 
 const uploadImageByUrl = (e) => {
@@ -59,11 +60,20 @@ export const tools = {
     inlineToolbar: true,
   },
   image: {
-    class: Image,
+    class: InlineImage,
+    inlineToolbar: true,
     config: {
-      uploader: {
-        uploadByUrl: uploadImageByUrl,
-        uploadByFile: uploadImageByFile,
+      embed: {
+        display: true,
+      },
+      unsplash: {
+        appName: "blog-editor",
+        apiUrl: "http://localhost:3000/unsplash",
+        maxResults: 30,
+        imageParams: {
+          q: 85,
+          w: 1500,
+        },
       },
     },
   },

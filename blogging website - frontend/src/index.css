@@ -134,3 +134,8 @@ html {
 .cdx-settings-button[data-tune="stretched"] {
   display: none;
 }
+
+/* Hide Unsplash attribution in image picker interface */
+.inline-image__image-credits {
+  display: none !important;
+}

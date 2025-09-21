@@ -12,15 +12,11 @@ const HomePage = () => {
 
   return (
     <PageAnimation>
-      <section className="h-cover flex justify-center gap-10">
+      <section className="">
         <div className="w-full max-w-[800px] mx-auto">
           <h1 className="font-medium text-xl mb-8">Latest Blogs</h1>
 
-          {error && (
-            <div className="text-red text-center py-4">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-red text-center py-4">{error}</div>}
 
           {isLoading && blogs.length === 0 ? (
             <div className="text-center py-8">

@@ -6,7 +6,7 @@ import UserAuthForm from "./pages/userAuthForm.page";
 import EditorPage from "./pages/editor.pages";
 import BlogPage from "./pages/blog.page";
 import DashboardPage from "./pages/dashboard.page";
-import EditProfile from "./pages/edit-profile.page";
+import ProfilePage from "./pages/profile.page";
 import ChangePassword from "./pages/change-password.page";
 import ChangeEmail from "./pages/change-email.page";
 import useAuthStore from "./stores/authStore";
@@ -28,7 +28,7 @@ const App = () => {
           <Route index element={<HomePage />} />
           <Route path="blog/:blog_id" element={<BlogPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="settings/edit-profile" element={<EditProfile />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="settings/change-password" element={<ChangePassword />} />
           <Route path="settings/change-email" element={<ChangeEmail />} />
           <Route path="signin" element={<UserAuthForm type="signin" />} />
