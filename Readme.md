@@ -2,15 +2,10 @@
 
 A full-stack blogging platform built with the MERN stack, featuring a modern blog editor, user authentication, social features, and comprehensive content management.
 
-## 🚀 Demo
-
-[Live Demo](https://youtu.be/J7BGuuuvDDk)
-
-![Platform Preview](https://c10.patreonusercontent.com/4/patreon-media/p/post/90122909/dd5363bd03fb4a6c8fcd5d15df98e6bf/eyJ3Ijo4MjB9/1.png?token-time=1697414400&token-hash=BZ-Mzp19WnBLcCFB8LmJFDw98mpnCRGcOCt_T615miY%3D)
-
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** - Modern UI library with hooks
 - **Vite** - Fast build tool and dev server
 - **Tailwind CSS** - Utility-first CSS framework
@@ -21,6 +16,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - **React Hot Toast** - Toast notifications
 
 ### Backend
+
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web framework
 - **MongoDB** - NoSQL database
@@ -31,6 +27,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - **AWS SDK** - Cloud services integration
 
 ### Editor & Media
+
 - **Editor.js** - Modern block-style editor
 - **Cloudinary** - Image management and optimization
 - **Multiple Editor.js plugins** - Rich content editing
@@ -38,6 +35,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 ## ✨ Features & Implementation Status
 
 ### 🔐 Authentication & User Management
+
 - [x] Google OAuth authentication via Firebase
 - [x] JWT-based session management
 - [x] User registration and login
@@ -46,6 +44,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [x] User profile pages with social links
 
 ### 📝 Content Creation & Management
+
 - [x] Modern block-style blog editor (Editor.js)
 - [x] Rich text editing with multiple plugins:
   - [x] Headers, lists, quotes
@@ -59,6 +58,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [x] Image optimization and CDN delivery
 
 ### 🏠 Content Discovery & Navigation
+
 - [x] Dynamic blog pages with SEO-friendly URLs
 - [x] Home page with latest blogs
 - [x] Search functionality (blogs and users)
@@ -68,6 +68,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [x] Smooth page transitions with Framer Motion
 
 ### 💬 Social Features & Interactions
+
 - [x] Like/unlike blog posts
 - [x] Comment system with nested replies
 - [x] Real-time notifications system
@@ -76,6 +77,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [x] Author bio and social links display
 
 ### 📊 Dashboard & Analytics
+
 - [x] Personal dashboard for content management
 - [x] Blog analytics and statistics
 - [x] Published vs draft blog management
@@ -83,6 +85,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [x] Notification center
 
 ### 🎨 User Experience
+
 - [x] Fully responsive design
 - [x] Modern, clean UI with Tailwind CSS
 - [x] Smooth animations and transitions
@@ -93,6 +96,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 ## 📱 Pages & Components
 
 ### Core Pages
+
 - [x] Home page (`home.page.jsx`)
 - [x] Blog editor (`editor.pages.jsx`)
 - [x] Individual blog view (`blog.page.jsx`)
@@ -106,6 +110,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [x] 404 error page
 
 ### Key Components
+
 - [x] Navigation system with user context
 - [x] Blog editor with save/publish functionality
 - [x] Comment system with nested threading
@@ -117,6 +122,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 ## 🎯 Future Enhancements
 
 ### Content Features
+
 - [ ] Blog series/collections
 - [ ] Content scheduling
 - [ ] Advanced SEO metadata
@@ -124,6 +130,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [ ] Content export/backup
 
 ### Social Features
+
 - [ ] User following system
 - [ ] Share functionality (social media)
 - [ ] Blog bookmarking/favorites
@@ -131,6 +138,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [ ] Real-time chat/messaging
 
 ### Platform Features
+
 - [ ] Multi-language support
 - [ ] Advanced search with filters
 - [ ] Content moderation tools
@@ -138,6 +146,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 - [ ] Advanced analytics dashboard
 
 ### Technical Improvements
+
 - [ ] Progressive Web App (PWA) features
 - [ ] Server-side rendering (SSR)
 - [ ] Automated testing suite
@@ -147,6 +156,7 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js (v16 or higher)
 - MongoDB database
 - Firebase project for authentication
@@ -155,18 +165,21 @@ A full-stack blogging platform built with the MERN stack, featuring a modern blo
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone <repository-url>
 cd mern-blogging-website
 ```
 
 2. Install backend dependencies
+
 ```bash
 cd server
 npm install
 ```
 
 3. Install frontend dependencies
+
 ```bash
 cd "blogging website - frontend"
 npm install
@@ -175,6 +188,7 @@ npm install
 4. Set up environment variables (create `.env` files in both frontend and backend)
 
 5. Start the development servers
+
 ```bash
 # Backend (from server directory)
 npm run dev
