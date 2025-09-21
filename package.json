@@ -11,8 +11,5 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "editorjs-inline-image": "^2.2.2"
   }
 }
