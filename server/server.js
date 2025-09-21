@@ -245,7 +245,7 @@ server.post("/logout", (_req, res) => {
 
 server.get("/verify", verifyJWT, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -259,7 +259,7 @@ server.get("/verify", verifyJWT, async (req, res) => {
 // Create or update draft
 server.post("/drafts", verifyJWT, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -307,7 +307,7 @@ server.post("/drafts", verifyJWT, async (req, res) => {
       description: description || "",
       content: content || { blocks: [] },
       tags: tags || [],
-      author: req.user.id,
+      author: req.user,
       draft: true,
     });
 
@@ -337,7 +337,7 @@ server.post("/drafts", verifyJWT, async (req, res) => {
 // Update existing draft
 server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -359,7 +359,7 @@ server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
     const updatedBlog = await Blog.findOneAndUpdate(
       {
         _id: req.params.draftId,
-        author: req.user.id,
+        author: req.user,
         draft: true,
       },
       {
@@ -394,7 +394,7 @@ server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
 server.post("/create-blog", verifyJWT, async (req, res) => {
   try {
     // Verify user still exists in database
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -457,7 +457,7 @@ server.post("/create-blog", verifyJWT, async (req, res) => {
       description: description || "",
       content,
       tags: tags || [],
-      author: req.user.id, // Use verified user ID
+      author: req.user, // Use verified user ID
       draft: draft || false,
     });
 
@@ -553,7 +553,7 @@ server.get("/get-blog/:blog_id", async (req, res) => {
     // If blog is a draft, only allow author or admin to view it
     if (blog.draft && userId) {
       const user = await User.findById(userId);
-      const isAuthor = blog.author._id.toString() === userId;
+      const isAuthor = blog.author?._id?.toString() === userId;
       const isAdmin = user?.admin === true;
 
       if (!isAuthor && !isAdmin) {
@@ -576,7 +576,7 @@ server.get("/get-blog/:blog_id", async (req, res) => {
 server.put("/update-blog/:blogId", verifyJWT, async (req, res) => {
   try {
     const { blogId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user;
     let { title, banner, description, content, tags, draft } = req.body;
 
     // Validate required fields
@@ -664,7 +664,7 @@ server.put("/update-blog/:blogId", verifyJWT, async (req, res) => {
 // Get user's blogs (both published and drafts)
 server.get("/user-blogs", verifyJWT, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user;
 
     // Fetch published blogs
     const publishedBlogs = await Blog.find({ author: userId, draft: false })
@@ -690,7 +690,7 @@ server.get("/user-blogs", verifyJWT, async (req, res) => {
 server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
   try {
     const { blogId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user;
 
     // Find and delete the blog (only if user is the author)
     const deletedBlog = await Blog.findOneAndDelete({
@@ -929,6 +929,106 @@ server.put("/update-email", verifyJWT, async (req, res) => {
       return res.status(400).json({ error: "Email is already registered" });
     }
     res.status(500).json({ error: "Failed to update email" });
+  }
+});
+
+// Unsplash proxy endpoints
+server.get("/unsplash/search/photos", async (req, res) => {
+  try {
+    const { query, page = 1, per_page = 30, orientation } = req.query;
+
+    if (!query) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    // Ensure per_page doesn't exceed Unsplash's limit of 30
+    const limitedPerPage = Math.min(parseInt(per_page), 30);
+
+    let apiUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${limitedPerPage}`;
+
+    if (orientation) {
+      apiUrl += `&orientation=${orientation}`;
+    }
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Unsplash API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Add pagination metadata to response
+    const paginationInfo = {
+      currentPage: parseInt(page),
+      perPage: limitedPerPage,
+      totalResults: data.total,
+      totalPages: data.total_pages,
+      hasNextPage: parseInt(page) < data.total_pages,
+      hasPrevPage: parseInt(page) > 1
+    };
+
+    res.json({
+      ...data,
+      pagination: paginationInfo
+    });
+  } catch (error) {
+    console.error("Unsplash proxy error:", error);
+    res.status(500).json({ error: "Failed to fetch images from Unsplash" });
+  }
+});
+
+server.get("/unsplash/photos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await fetch(
+      `https://api.unsplash.com/photos/${id}`,
+      {
+        headers: {
+          Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Unsplash API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Unsplash proxy error:", error);
+    res.status(500).json({ error: "Failed to fetch image from Unsplash" });
+  }
+});
+
+server.get("/unsplash/photos/:id/download", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await fetch(
+      `https://api.unsplash.com/photos/${id}/download`,
+      {
+        headers: {
+          Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Unsplash API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Unsplash proxy error:", error);
+    res.status(500).json({ error: "Failed to track download from Unsplash" });
   }
 });
 
