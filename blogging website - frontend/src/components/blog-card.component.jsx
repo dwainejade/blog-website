@@ -29,10 +29,10 @@ const BlogCard = ({ blog }) => {
             alt={fullname}
             className="w-8 h-8 rounded-full"
           />
-          <p className="line-clamp-1 text-sm text-dark-grey">
-            {fullname} @{username}
+          <p className="line-clamp-1 text-sm text-dark-grey">{fullname}</p>
+          <p className="min-w-fit text-sm text-dark-grey">
+            {formatDate(publishedAt)}
           </p>
-          <p className="min-w-fit text-sm text-dark-grey">{formatDate(publishedAt)}</p>
         </div>
 
         <h1 className="blog-title mb-3">{title}</h1>
@@ -42,16 +42,14 @@ const BlogCard = ({ blog }) => {
         </p>
 
         <div className="flex gap-4 items-center">
-          {tags && tags.length > 0 && (
-            <span className="btn-light py-1 px-4 text-sm">{tags[0]}</span>
-          )}
+          <span className="btn-light py-1 px-4 text-sm">{tags[0]}</span>
           <span className="flex items-center gap-2 text-dark-grey text-sm">
             <i className="fi fi-rr-heart"></i>
-            {total_likes || 0}
+            {total_likes}
           </span>
           <span className="flex items-center gap-2 text-dark-grey text-sm">
             <i className="fi fi-rr-comment-dots"></i>
-            {total_comments || 0}
+            {total_comments}
           </span>
         </div>
       </div>

@@ -73,6 +73,7 @@ const BlogContent = ({ content }) => {
             );
 
           case "image":
+            console.log(block.data);
             // Handle both regular images (block.data.file.url) and Unsplash images (block.data.url)
             const imageUrl = block.data.file?.url || block.data.url;
 

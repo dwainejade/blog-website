@@ -25,7 +25,8 @@ export default {
             },
             fontFamily: {
               inter: ["'Inter'", "sans-serif"],
-              gelasio: ["'Gelasio'", "serif"]
+              gelasio: ["'Gelasio'", "serif"],
+              montserrat: ["'Montserrat'", "sans-serif"]
             },
         },
 
