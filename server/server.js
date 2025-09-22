@@ -10,6 +10,7 @@ import cookieParser from "cookie-parser";
 // schemas
 import User from "./Schema/User.js";
 import Blog from "./Schema/Blog.js";
+import Comment from "./Schema/Comment.js";
 
 // dotenv.config();
 
@@ -543,7 +544,7 @@ server.get("/get-blog/:blog_id", async (req, res) => {
 
     const blog = await Blog.findOne(query).populate(
       "author",
-      "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      "personal_info.profile_img personal_info.username personal_info.fullname _id"
     );
 
     if (!blog) {
@@ -1029,6 +1030,165 @@ server.get("/unsplash/photos/:id/download", async (req, res) => {
   } catch (error) {
     console.error("Unsplash proxy error:", error);
     res.status(500).json({ error: "Failed to track download from Unsplash" });
+  }
+});
+
+// Add comment to blog
+server.post("/add-comment", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    console.log("Add comment request body:", req.body);
+    const { _id: blog_id, comment, blog_author, replying_to } = req.body;
+
+    if (!comment.length) {
+      return res.status(403).json({ error: "Write something to leave a comment" });
+    }
+
+    const commentObj = {
+      blog_id,
+      blog_author,
+      comment,
+      commented_by: user_id,
+    };
+
+    if (replying_to) {
+      commentObj.parent = replying_to;
+      commentObj.isReply = true;
+    }
+
+    await new Comment(commentObj).save().then(async (commentFile) => {
+      let { comment, commentedAt, children } = commentFile;
+
+      await Blog.findOneAndUpdate(
+        { _id: blog_id },
+        {
+          $push: { comments: commentFile._id },
+          $inc: {
+            "activity.total_comments": 1,
+            "activity.total_parent_comments": replying_to ? 0 : 1,
+          },
+        }
+      );
+
+      if (replying_to) {
+        await Comment.findOneAndUpdate(
+          { _id: replying_to },
+          { $push: { children: commentFile._id } }
+        );
+      }
+
+      return res.status(200).json({
+        comment,
+        commentedAt,
+        _id: commentFile._id,
+        user_id,
+        children,
+      });
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get comments for a blog
+server.post("/get-blog-comments", async (req, res) => {
+  try {
+    let { blog_id, skip } = req.body;
+    let maxLimit = 5;
+
+    Comment.find({ blog_id, isReply: { $ne: true } })
+      .populate("commented_by", "personal_info.username personal_info.fullname personal_info.profile_img")
+      .skip(skip)
+      .limit(maxLimit)
+      .sort({ commentedAt: -1 })
+      .then((comment) => {
+        return res.status(200).json(comment);
+      })
+      .catch((err) => {
+        console.log(err);
+        return res.status(500).json({ error: err.message });
+      });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get replies for a comment
+server.post("/get-replies", async (req, res) => {
+  try {
+    let { _id, skip } = req.body;
+    let maxLimit = 5;
+
+    Comment.findOne({ _id })
+      .populate({
+        path: "children",
+        options: {
+          limit: maxLimit,
+          skip: skip,
+          sort: { commentedAt: -1 },
+        },
+        populate: {
+          path: "commented_by",
+          select: "personal_info.profile_img personal_info.fullname personal_info.username",
+        },
+        select: "-blog_id -updatedAt",
+      })
+      .select("children")
+      .then((doc) => {
+        return res.status(200).json({ replies: doc.children });
+      })
+      .catch((err) => {
+        return res.status(500).json({ error: err.message });
+      });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete comment (admin only)
+server.delete("/delete-comment", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { _id: comment_id } = req.body;
+
+    // Get user to check if admin
+    const user = await User.findById(user_id);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+
+    const comment = await Comment.findById(comment_id);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Delete the comment and its children
+    await Comment.findByIdAndDelete(comment_id);
+
+    // If it has children, delete them too
+    if (comment.children.length) {
+      await Comment.deleteMany({ _id: { $in: comment.children } });
+    }
+
+    // Update blog comment count
+    await Blog.findByIdAndUpdate(comment.blog_id, {
+      $pull: { comments: comment_id },
+      $inc: {
+        "activity.total_comments": -(1 + comment.children.length),
+        "activity.total_parent_comments": comment.isReply ? 0 : -1,
+      },
+    });
+
+    // If it's a reply, remove from parent's children
+    if (comment.parent) {
+      await Comment.findByIdAndUpdate(comment.parent, {
+        $pull: { children: comment_id },
+      });
+    }
+
+    return res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 });
 

@@ -8,6 +8,7 @@ import { calculateReadingTime, formatReadingTime } from "../common/reading-time"
 import PageAnimation from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
 import EditorNav from "../components/editor-nav.component";
+import Comments from "../components/comments.component";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
@@ -171,6 +172,8 @@ const BlogPage = () => {
           </div>
         </div>
       )}
+
+      <Comments blog={blog} />
     </div>
   );
 };
