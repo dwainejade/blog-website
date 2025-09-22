@@ -30,7 +30,10 @@ const BlogEditor = () => {
   useEffect(() => {
     const initializeEditor = async () => {
       // Destroy existing editor if it exists
-      if (editorRef.current && typeof editorRef.current.destroy === "function") {
+      if (
+        editorRef.current &&
+        typeof editorRef.current.destroy === "function"
+      ) {
         try {
           await editorRef.current.destroy();
           editorRef.current = null;
@@ -59,7 +62,7 @@ const BlogEditor = () => {
           },
           onChange: () => {
             console.log("Editor content changed");
-          }
+          },
         });
       } catch (error) {
         console.error("Error initializing editor:", error);
@@ -71,7 +74,10 @@ const BlogEditor = () => {
 
     return () => {
       clearTimeout(timeoutId);
-      if (editorRef.current && typeof editorRef.current.destroy === "function") {
+      if (
+        editorRef.current &&
+        typeof editorRef.current.destroy === "function"
+      ) {
         try {
           const destroyResult = editorRef.current.destroy();
           // Only call catch if destroy returns a promise
@@ -234,7 +240,7 @@ const BlogEditor = () => {
               defaultValue={title}
               name="Blog Title"
               placeholder="Blog Title"
-              className="text-4xl font-medium w-full h-20 outline-none resize-none mt-10 leading-tight placeholder:opacity-40"
+              className="md:text-4xl text-3xl font-[700] font-inter text-zinc-900 w-full h-20 outline-none resize-none mt-10 leading-tight placeholder:opacity-40"
               onKeyDown={handleTitleKeyDown}
               onChange={handleTitleChange}
             />
