@@ -1037,7 +1037,6 @@ server.get("/unsplash/photos/:id/download", async (req, res) => {
 server.post("/add-comment", verifyJWT, async (req, res) => {
   try {
     const user_id = req.user;
-    console.log("Add comment request body:", req.body);
     const { _id: blog_id, comment, blog_author, replying_to } = req.body;
 
     if (!comment.length) {

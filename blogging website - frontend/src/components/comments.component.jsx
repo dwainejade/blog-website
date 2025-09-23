@@ -11,10 +11,7 @@ const Comments = ({ blog }) => {
   const [totalParentCommentsLoaded, setTotalParentCommentsLoaded] = useState(0);
   const { user, isAuthenticated } = useAuthStore();
 
-  const {
-    _id: blog_id,
-    activity: { total_parent_comments } = {},
-  } = blog;
+  const { _id: blog_id, activity: { total_parent_comments } = {} } = blog;
 
   useEffect(() => {
     if (blog_id) {
@@ -36,12 +33,12 @@ const Comments = ({ blog }) => {
         comment.childrenLevel = 0;
       });
 
-      setComments(
-        createNewArr ? res.data : [...comments, ...res.data]
-      );
+      setComments(createNewArr ? res.data : [...comments, ...res.data]);
 
       setTotalParentCommentsLoaded(
-        createNewArr ? res.data.length : totalParentCommentsLoaded + res.data.length
+        createNewArr
+          ? res.data.length
+          : totalParentCommentsLoaded + res.data.length
       );
     } catch (err) {
       console.log(err);
@@ -55,7 +52,7 @@ const Comments = ({ blog }) => {
   };
 
   return (
-    <div className="max-w-[700px] center py-10 max-lg:px-[5vw]">
+    <div className="w-screen max-w-[800px] py-10">
       <div className="text-xl font-medium">Comments</div>
 
       {isAuthenticated ? (
@@ -65,6 +62,7 @@ const Comments = ({ blog }) => {
           setParentCommentCountFun={setTotalParentCommentsLoaded}
           replyingTo={undefined}
           setReplying={undefined}
+          onCommentAdded={() => fetchComments({ skip: 0, createNewArr: true })}
         />
       ) : (
         <div className="border border-grey p-5 bg-white rounded-md my-8">

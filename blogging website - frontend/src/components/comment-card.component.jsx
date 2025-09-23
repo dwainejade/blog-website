@@ -43,7 +43,9 @@ const CommentCard = ({ index, leftVal, commentData, blog }) => {
         });
 
         setReplies(createNewArr ? replies : [...replies, ...replies]);
-        setRepliesLoaded(createNewArr ? replies.length : repliesLoaded + replies.length);
+        setRepliesLoaded(
+          createNewArr ? replies.length : repliesLoaded + replies.length
+        );
       } catch (err) {
         console.log(err);
       }
@@ -61,9 +63,12 @@ const CommentCard = ({ index, leftVal, commentData, blog }) => {
     setDeleting(true);
 
     try {
-      await axios.delete(`${import.meta.env.VITE_SERVER_DOMAIN}/delete-comment`, {
-        data: { _id },
-      });
+      await axios.delete(
+        `${import.meta.env.VITE_SERVER_DOMAIN}/delete-comment`,
+        {
+          data: { _id },
+        }
+      );
 
       setDeleted(true);
       e.target.removeAttribute("disabled");
@@ -102,8 +107,8 @@ const CommentCard = ({ index, leftVal, commentData, blog }) => {
 
   if (deleted) {
     return (
-      <div className="w-full" style={{ paddingLeft: `${leftVal * 10}px` }}>
-        <div className="my-5 p-6 bg-grey/20 border border-grey rounded-md">
+      <div className="w-full" style={{ paddingLeft: `${leftVal * 20}px` }}>
+        <div className="my-5 p-6 bg-grey/20 border-l-2 border-grey/50">
           <p className="text-dark-grey italic">This comment has been deleted</p>
         </div>
       </div>
@@ -111,11 +116,11 @@ const CommentCard = ({ index, leftVal, commentData, blog }) => {
   }
 
   return (
-    <div className="w-full" style={{ paddingLeft: `${leftVal * 10}px` }}>
-      <div className="my-5 p-6 bg-white border border-grey rounded-md">
+    <div className="w-full pl-2">
+      <div className="my-5 p-6 border-l-4 border-gray-300">
         <div className="flex gap-3 items-center mb-8">
           <img src={profile_img} className="w-6 h-6 rounded-full" />
-          <p className="line-clamp-1">{fullname} @{commented_by_username}</p>
+          <p className="line-clamp-1">{fullname}</p>
           <p className="min-w-fit">{getDay(commentedAt)}</p>
         </div>
 
@@ -166,6 +171,12 @@ const CommentCard = ({ index, leftVal, commentData, blog }) => {
               setParentCommentCountFun={undefined}
               replyingTo={_id}
               setReplying={setReplying}
+              onCommentAdded={() => {
+                setReplying(false);
+                if (showReplies) {
+                  loadReplies({ skip: 0, createNewArr: true });
+                }
+              }}
             />
           </div>
         ) : (
@@ -173,7 +184,7 @@ const CommentCard = ({ index, leftVal, commentData, blog }) => {
         )}
 
         {showReplies && replies.length ? (
-          <div className="ml-20">
+          <div className="mt-4">
             {replies.map((reply, i) => {
               return (
                 <CommentCard

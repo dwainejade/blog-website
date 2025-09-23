@@ -8,6 +8,7 @@ const CommentField = ({
   setParentCommentCountFun,
   replyingTo,
   setReplying,
+  onCommentAdded,
 }) => {
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,11 @@ const CommentField = ({
         setReplying(false);
       } else {
         setParentCommentCountFun((preVal) => preVal + 1);
+      }
+
+      // Refresh comments list if callback provided
+      if (onCommentAdded) {
+        onCommentAdded();
       }
     } catch (err) {
       console.log(err.message);
