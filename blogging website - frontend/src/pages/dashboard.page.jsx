@@ -54,13 +54,15 @@ const DashboardPage = () => {
               </p>
             </div>
             <div className="flex gap-4">
-              <button
-                onClick={() => navigate('/editor')}
-                className="btn-dark flex items-center gap-2"
-              >
-                <i className="fi fi-rr-edit"></i>
-                <span>Write New Blog</span>
-              </button>
+              {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                <button
+                  onClick={() => navigate('/editor')}
+                  className="btn-dark flex items-center gap-2"
+                >
+                  <i className="fi fi-rr-edit"></i>
+                  <span>Write New Blog</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -134,13 +136,15 @@ const DashboardPage = () => {
                     ) : (
                       <div className="text-center py-8 text-dark-grey">
                         <i className="fi fi-rr-document text-4xl mb-4"></i>
-                        <p>No published blogs yet. Start writing your first blog!</p>
-                        <button
-                          onClick={() => navigate('/editor')}
-                          className="btn-light mt-4"
-                        >
-                          Create Blog
-                        </button>
+                        <p>No published blogs yet{(user?.role === 'admin' || user?.role === 'superadmin') ? '. Start writing your first blog!' : '. Only admins can create blogs.'}</p>
+                        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                          <button
+                            onClick={() => navigate('/editor')}
+                            className="btn-light mt-4"
+                          >
+                            Create Blog
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -201,17 +205,21 @@ const DashboardPage = () => {
               <div className="bg-white border border-grey rounded-lg p-6">
                 <h3 className="font-medium text-lg mb-4">Quick Actions</h3>
                 <div className="space-y-3">
-                  <button
-                    onClick={() => navigate('/editor')}
-                    className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3"
-                  >
-                    <i className="fi fi-rr-edit text-lg"></i>
-                    <span>Write New Blog</span>
-                  </button>
-                  <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
-                    <i className="fi fi-rr-document text-lg"></i>
-                    <span>Manage Drafts ({userDrafts?.length || 0})</span>
-                  </button>
+                  {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                    <>
+                      <button
+                        onClick={() => navigate('/editor')}
+                        className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3"
+                      >
+                        <i className="fi fi-rr-edit text-lg"></i>
+                        <span>Write New Blog</span>
+                      </button>
+                      <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
+                        <i className="fi fi-rr-document text-lg"></i>
+                        <span>Manage Drafts ({userDrafts?.length || 0})</span>
+                      </button>
+                    </>
+                  )}
                   <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
                     <i className="fi fi-rr-settings text-lg"></i>
                     <span>Settings</span>

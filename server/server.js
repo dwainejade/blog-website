@@ -97,6 +97,36 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
+// Middleware to check if user is superadmin
+const verifySuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== "superadmin") {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Superadmin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
+// Middleware to check if user is admin or superadmin
+const verifyAdminOrSuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Admin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
 const gernerateUsername = async (email) => {
   let username = email.split("@")[0];
   let isUsernameTaken = await User.exists({
@@ -261,7 +291,7 @@ server.get("/verify", verifyJWT, async (req, res) => {
 });
 
 // Create or update draft
-server.post("/drafts", verifyJWT, async (req, res) => {
+server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.user);
     if (!user) {
@@ -339,7 +369,7 @@ server.post("/drafts", verifyJWT, async (req, res) => {
 });
 
 // Update existing draft
-server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
+server.put("/drafts/:draftId", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.user);
     if (!user) {
@@ -395,7 +425,7 @@ server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
   }
 });
 
-server.post("/create-blog", verifyJWT, async (req, res) => {
+server.post("/create-blog", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
   try {
     // Verify user still exists in database
     const user = await User.findById(req.user);
@@ -577,7 +607,7 @@ server.get("/get-blog/:blog_id", async (req, res) => {
 });
 
 // Update existing blog
-server.put("/update-blog/:blogId", verifyJWT, async (req, res) => {
+server.put("/update-blog/:blogId", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
   try {
     const { blogId } = req.params;
     const userId = req.user;
@@ -1183,36 +1213,6 @@ server.post("/get-replies", async (req, res) => {
   }
 });
 
-// Middleware to check if user is superadmin
-const verifySuperAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user || user.role !== "superadmin") {
-      return res
-        .status(403)
-        .json({ error: "Access denied. Superadmin privileges required." });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to verify admin status" });
-  }
-};
-
-// Middleware to check if user is admin or superadmin
-const verifyAdminOrSuperAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
-      return res
-        .status(403)
-        .json({ error: "Access denied. Admin privileges required." });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to verify admin status" });
-  }
-};
-
 // Delete comment (admin or superadmin only)
 server.delete(
   "/delete-comment",
@@ -1499,6 +1499,56 @@ server.get(
     }
   }
 );
+
+// TEMPORARY: Migration to add role field to existing users
+server.post("/migrate-user-roles", async (req, res) => {
+  try {
+    // Add role field to users who don't have it
+    const result = await User.updateMany(
+      { role: { $exists: false } },
+      { $set: { role: "user" } }
+    );
+
+    res.status(200).json({
+      message: "User roles migration completed",
+      usersUpdated: result.modifiedCount
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Migration failed" });
+  }
+});
+
+// TEMPORARY: Create superadmin (REMOVE IN PRODUCTION)
+server.post("/create-superadmin", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { "personal_info.email": email },
+      { $set: { role: "superadmin" } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "Superadmin created successfully",
+      user: {
+        fullname: user.personal_info.fullname,
+        email: user.personal_info.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create superadmin" });
+  }
+});
 
 // Health check / ping route for UptimeRobot
 server.get("/ping", (req, res) => {
