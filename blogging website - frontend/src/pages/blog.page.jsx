@@ -4,7 +4,10 @@ import axios from "axios";
 import Loader from "../components/loader.component";
 import BlogContent from "../components/blog-content.component";
 import { formatDate } from "../common/date";
-import { calculateReadingTime, formatReadingTime } from "../common/reading-time";
+import {
+  calculateReadingTime,
+  formatReadingTime,
+} from "../common/reading-time";
 import PageAnimation from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
 import EditorNav from "../components/editor-nav.component";
@@ -88,7 +91,7 @@ const BlogPage = () => {
   const readingTime = calculateReadingTime(content);
 
   return (
-    <div className="max-w-[900px] center py-4 max-lg:px-[5vw]">
+    <div className="max-w-[900px] w-screen center py-4 max-lg:px-[5vw]">
       <EditorNav
         type="blog"
         blogTitle={title}
