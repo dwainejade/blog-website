@@ -52,7 +52,7 @@ const Comments = ({ blog }) => {
   };
 
   return (
-    <div className="w-screen max-w-[800px] py-10">
+    <div className="w-full max-w-[800px] py-10">
       <div className="text-xl font-medium">Comments</div>
 
       {isAuthenticated ? (

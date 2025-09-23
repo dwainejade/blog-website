@@ -97,6 +97,36 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
+// Middleware to check if user is superadmin
+const verifySuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== "superadmin") {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Superadmin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
+// Middleware to check if user is admin or superadmin
+const verifyAdminOrSuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Admin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
 const gernerateUsername = async (email) => {
   let username = email.split("@")[0];
   let isUsernameTaken = await User.exists({
@@ -261,7 +291,7 @@ server.get("/verify", verifyJWT, async (req, res) => {
 });
 
 // Create or update draft
-server.post("/drafts", verifyJWT, async (req, res) => {
+server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.user);
     if (!user) {
@@ -339,161 +369,173 @@ server.post("/drafts", verifyJWT, async (req, res) => {
 });
 
 // Update existing draft
-server.put("/drafts/:draftId", verifyJWT, async (req, res) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+server.put(
+  "/drafts/:draftId",
+  verifyJWT,
+  verifyAdminOrSuperAdmin,
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.user);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      let { title, banner, description, content, tags } = req.body;
+
+      // Only validate title for drafts
+      if (!title || !title.trim()) {
+        return res.status(400).json({ error: "Blog title is required" });
+      }
+
+      // convert and consolidate tags
+      tags =
+        tags && Array.isArray(tags)
+          ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+          : [];
+
+      // Find and update the draft
+      const updatedBlog = await Blog.findOneAndUpdate(
+        {
+          _id: req.params.draftId,
+          author: req.user,
+          draft: true,
+        },
+        {
+          title: title.trim(),
+          banner: banner || "",
+          description: description || "",
+          content: content || { blocks: [] },
+          tags: tags || [],
+        },
+        { new: true }
+      );
+
+      if (!updatedBlog) {
+        return res
+          .status(404)
+          .json({ error: "Draft not found or not authorized" });
+      }
+
+      res.status(200).json({
+        message: "Draft updated successfully",
+        draftId: updatedBlog._id,
+        blog_id: updatedBlog.blog_id,
+        title: updatedBlog.title,
+        draft: updatedBlog.draft,
+      });
+    } catch (error) {
+      console.error("Error updating draft:", error);
+      res.status(500).json({ error: "Failed to update draft" });
     }
-
-    let { title, banner, description, content, tags } = req.body;
-
-    // Only validate title for drafts
-    if (!title || !title.trim()) {
-      return res.status(400).json({ error: "Blog title is required" });
-    }
-
-    // convert and consolidate tags
-    tags =
-      tags && Array.isArray(tags)
-        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
-        : [];
-
-    // Find and update the draft
-    const updatedBlog = await Blog.findOneAndUpdate(
-      {
-        _id: req.params.draftId,
-        author: req.user,
-        draft: true,
-      },
-      {
-        title: title.trim(),
-        banner: banner || "",
-        description: description || "",
-        content: content || { blocks: [] },
-        tags: tags || [],
-      },
-      { new: true }
-    );
-
-    if (!updatedBlog) {
-      return res
-        .status(404)
-        .json({ error: "Draft not found or not authorized" });
-    }
-
-    res.status(200).json({
-      message: "Draft updated successfully",
-      draftId: updatedBlog._id,
-      blog_id: updatedBlog.blog_id,
-      title: updatedBlog.title,
-      draft: updatedBlog.draft,
-    });
-  } catch (error) {
-    console.error("Error updating draft:", error);
-    res.status(500).json({ error: "Failed to update draft" });
   }
-});
+);
 
-server.post("/create-blog", verifyJWT, async (req, res) => {
-  try {
-    // Verify user still exists in database
-    const user = await User.findById(req.user);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    let { title, banner, description, content, tags, draft } = req.body;
-
-    // Validate required fields
-    if (!title || !title.trim()) {
-      return res.status(400).json({ error: "Blog title is required" });
-    }
-
-    // For published blogs, validate all fields
-    if (!draft) {
-      if (!description || !description.length) {
-        return res.status(400).json({ error: "Blog description is required" });
+server.post(
+  "/create-blog",
+  verifyJWT,
+  verifyAdminOrSuperAdmin,
+  async (req, res) => {
+    try {
+      // Verify user still exists in database
+      const user = await User.findById(req.user);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
       }
 
-      if (!banner || !banner.length) {
-        return res.status(400).json({ error: "Blog banner is required" });
+      let { title, banner, description, content, tags, draft } = req.body;
+
+      // Validate required fields
+      if (!title || !title.trim()) {
+        return res.status(400).json({ error: "Blog title is required" });
       }
 
-      if (!content || content.blocks.length === 0) {
-        return res.status(400).json({ error: "Blog content is required" });
+      // For published blogs, validate all fields
+      if (!draft) {
+        if (!description || !description.length) {
+          return res
+            .status(400)
+            .json({ error: "Blog description is required" });
+        }
+
+        if (!banner || !banner.length) {
+          return res.status(400).json({ error: "Blog banner is required" });
+        }
+
+        if (!content || content.blocks.length === 0) {
+          return res.status(400).json({ error: "Blog content is required" });
+        }
       }
-    }
 
-    // convert and consolidate tags
-    tags =
-      tags && Array.isArray(tags)
-        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
-        : [];
+      // convert and consolidate tags
+      tags =
+        tags && Array.isArray(tags)
+          ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+          : [];
 
-    // Generate unique blog_id
-    let blog_id =
-      title
-        .replace(/[^a-zA-Z0-9]/g, " ")
-        .replace(/\s+/g, "-")
-        .toLowerCase() +
-      "-" +
-      nanoid(6);
-
-    // Ensure blog_id is unique
-    let existingBlog = await Blog.findOne({ blog_id });
-    while (existingBlog) {
-      blog_id =
+      // Generate unique blog_id
+      let blog_id =
         title
           .replace(/[^a-zA-Z0-9]/g, " ")
           .replace(/\s+/g, "-")
           .toLowerCase() +
         "-" +
         nanoid(6);
-      existingBlog = await Blog.findOne({ blog_id });
-    }
 
-    // Create new blog with verified user as author
-    const blog = new Blog({
-      blog_id,
-      title: title.trim(),
-      banner: banner || "",
-      description: description || "",
-      content,
-      tags: tags || [],
-      author: req.user, // Use verified user ID
-      draft: draft || false,
-    });
-
-    const savedBlog = await blog.save();
-
-    let incrementVal = draft ? 0 : 1;
-
-    await User.findOneAndUpdate(
-      { _id: savedBlog.author },
-      {
-        $inc: { "account_info.totla_posts": incrementVal },
-        $push: { blogs: savedBlog._id },
+      // Ensure blog_id is unique
+      let existingBlog = await Blog.findOne({ blog_id });
+      while (existingBlog) {
+        blog_id =
+          title
+            .replace(/[^a-zA-Z0-9]/g, " ")
+            .replace(/\s+/g, "-")
+            .toLowerCase() +
+          "-" +
+          nanoid(6);
+        existingBlog = await Blog.findOne({ blog_id });
       }
-    );
 
-    res.status(201).json({
-      message: "Blog created successfully",
-      blog: {
-        blog_id: savedBlog.blog_id,
-        title: savedBlog.title,
-        author: savedBlog.author,
-        publishedAt: savedBlog.publishedAt,
-        draft: savedBlog.draft,
-        content: savedBlog.content,
-        tags: savedBlog.tags,
-      },
-    });
-  } catch (error) {
-    console.error("Error creating blog:", error);
-    res.status(500).json({ error: "Failed to create blog" });
+      // Create new blog with verified user as author
+      const blog = new Blog({
+        blog_id,
+        title: title.trim(),
+        banner: banner || "",
+        description: description || "",
+        content,
+        tags: tags || [],
+        author: req.user, // Use verified user ID
+        draft: draft || false,
+      });
+
+      const savedBlog = await blog.save();
+
+      let incrementVal = draft ? 0 : 1;
+
+      await User.findOneAndUpdate(
+        { _id: savedBlog.author },
+        {
+          $inc: { "account_info.totla_posts": incrementVal },
+          $push: { blogs: savedBlog._id },
+        }
+      );
+
+      res.status(201).json({
+        message: "Blog created successfully",
+        blog: {
+          blog_id: savedBlog.blog_id,
+          title: savedBlog.title,
+          author: savedBlog.author,
+          publishedAt: savedBlog.publishedAt,
+          draft: savedBlog.draft,
+          content: savedBlog.content,
+          tags: savedBlog.tags,
+        },
+      });
+    } catch (error) {
+      console.error("Error creating blog:", error);
+      res.status(500).json({ error: "Failed to create blog" });
+    }
   }
-});
+);
 
 // Get latest blogs
 server.get("/latest-blogs", async (req, res) => {
@@ -577,93 +619,100 @@ server.get("/get-blog/:blog_id", async (req, res) => {
 });
 
 // Update existing blog
-server.put("/update-blog/:blogId", verifyJWT, async (req, res) => {
-  try {
-    const { blogId } = req.params;
-    const userId = req.user;
-    let { title, banner, description, content, tags, draft } = req.body;
+server.put(
+  "/update-blog/:blogId",
+  verifyJWT,
+  verifyAdminOrSuperAdmin,
+  async (req, res) => {
+    try {
+      const { blogId } = req.params;
+      const userId = req.user;
+      let { title, banner, description, content, tags, draft } = req.body;
 
-    // Validate required fields
-    if (!title || !title.trim()) {
-      return res.status(400).json({ error: "Blog title is required" });
-    }
-
-    // For published blogs, validate all fields
-    if (!draft) {
-      if (!description || !description.length) {
-        return res.status(400).json({ error: "Blog description is required" });
+      // Validate required fields
+      if (!title || !title.trim()) {
+        return res.status(400).json({ error: "Blog title is required" });
       }
 
-      if (!content || content.blocks.length === 0) {
-        return res.status(400).json({ error: "Blog content is required" });
+      // For published blogs, validate all fields
+      if (!draft) {
+        if (!description || !description.length) {
+          return res
+            .status(400)
+            .json({ error: "Blog description is required" });
+        }
+
+        if (!content || content.blocks.length === 0) {
+          return res.status(400).json({ error: "Blog content is required" });
+        }
       }
+
+      // Convert and consolidate tags
+      tags =
+        tags && Array.isArray(tags)
+          ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
+          : [];
+
+      // Find the blog and check authorization
+      const existingBlog = await Blog.findById(blogId).populate(
+        "author",
+        "personal_info.username personal_info.fullname"
+      );
+
+      if (!existingBlog) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+
+      // Check if user is the author or admin
+      const user = await User.findById(userId);
+      const isAuthor = existingBlog.author._id.toString() === userId;
+      const isAdmin = user.admin === true;
+
+      if (!isAuthor && !isAdmin) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to edit this blog" });
+      }
+
+      // Update the blog
+      const updatedBlog = await Blog.findByIdAndUpdate(
+        blogId,
+        {
+          title: title.trim(),
+          banner: banner || "",
+          description: description || "",
+          content: content || { blocks: [] },
+          tags: tags || [],
+          draft: draft || false,
+          updatedAt: new Date(),
+        },
+        { new: true }
+      ).populate(
+        "author",
+        "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      );
+
+      res.status(200).json({
+        message: "Blog updated successfully",
+        blog: {
+          blog_id: updatedBlog.blog_id,
+          title: updatedBlog.title,
+          author: updatedBlog.author,
+          publishedAt: updatedBlog.publishedAt,
+          updatedAt: updatedBlog.updatedAt,
+          draft: updatedBlog.draft,
+          content: updatedBlog.content,
+          tags: updatedBlog.tags,
+          description: updatedBlog.description,
+          banner: updatedBlog.banner,
+        },
+      });
+    } catch (error) {
+      console.error("Error updating blog:", error);
+      res.status(500).json({ error: "Failed to update blog" });
     }
-
-    // Convert and consolidate tags
-    tags =
-      tags && Array.isArray(tags)
-        ? [...new Set(tags.map((tag) => tag.toLowerCase()))]
-        : [];
-
-    // Find the blog and check authorization
-    const existingBlog = await Blog.findById(blogId).populate(
-      "author",
-      "personal_info.username personal_info.fullname"
-    );
-
-    if (!existingBlog) {
-      return res.status(404).json({ error: "Blog not found" });
-    }
-
-    // Check if user is the author or admin
-    const user = await User.findById(userId);
-    const isAuthor = existingBlog.author._id.toString() === userId;
-    const isAdmin = user.admin === true;
-
-    if (!isAuthor && !isAdmin) {
-      return res
-        .status(403)
-        .json({ error: "Not authorized to edit this blog" });
-    }
-
-    // Update the blog
-    const updatedBlog = await Blog.findByIdAndUpdate(
-      blogId,
-      {
-        title: title.trim(),
-        banner: banner || "",
-        description: description || "",
-        content: content || { blocks: [] },
-        tags: tags || [],
-        draft: draft || false,
-        updatedAt: new Date(),
-      },
-      { new: true }
-    ).populate(
-      "author",
-      "personal_info.profile_img personal_info.username personal_info.fullname -_id"
-    );
-
-    res.status(200).json({
-      message: "Blog updated successfully",
-      blog: {
-        blog_id: updatedBlog.blog_id,
-        title: updatedBlog.title,
-        author: updatedBlog.author,
-        publishedAt: updatedBlog.publishedAt,
-        updatedAt: updatedBlog.updatedAt,
-        draft: updatedBlog.draft,
-        content: updatedBlog.content,
-        tags: updatedBlog.tags,
-        description: updatedBlog.description,
-        banner: updatedBlog.banner,
-      },
-    });
-  } catch (error) {
-    console.error("Error updating blog:", error);
-    res.status(500).json({ error: "Failed to update blog" });
   }
-});
+);
 
 // Get user's blogs (both published and drafts)
 server.get("/user-blogs", verifyJWT, async (req, res) => {
@@ -860,11 +909,9 @@ server.put("/change-password", verifyJWT, async (req, res) => {
 
     // Check if user has Google auth (no password to change)
     if (user.google_auth) {
-      return res
-        .status(400)
-        .json({
-          error: "Cannot change password for Google authenticated accounts",
-        });
+      return res.status(400).json({
+        error: "Cannot change password for Google authenticated accounts",
+      });
     }
 
     // Verify current password
@@ -912,11 +959,9 @@ server.put("/update-email", verifyJWT, async (req, res) => {
 
     // Check if user has Google auth
     if (user.google_auth) {
-      return res
-        .status(400)
-        .json({
-          error: "Cannot change email for Google authenticated accounts",
-        });
+      return res.status(400).json({
+        error: "Cannot change email for Google authenticated accounts",
+      });
     }
 
     // Verify password
@@ -1182,36 +1227,6 @@ server.post("/get-replies", async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-
-// Middleware to check if user is superadmin
-const verifySuperAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user || user.role !== "superadmin") {
-      return res
-        .status(403)
-        .json({ error: "Access denied. Superadmin privileges required." });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to verify admin status" });
-  }
-};
-
-// Middleware to check if user is admin or superadmin
-const verifyAdminOrSuperAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
-      return res
-        .status(403)
-        .json({ error: "Access denied. Admin privileges required." });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to verify admin status" });
-  }
-};
 
 // Delete comment (admin or superadmin only)
 server.delete(

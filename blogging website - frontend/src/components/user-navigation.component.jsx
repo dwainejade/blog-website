@@ -62,14 +62,16 @@ const UserNavigationPanel = ({ show, hide }) => {
           </Link>
         )}
 
-        <Link
-          to="/editor"
-          className="flex gap-2 link pl-8 py-4"
-          onClick={handleLinkClick}
-        >
-          <i className="fi fi-rr-edit text-xl" />
-          <p>Write</p>
-        </Link>
+        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+          <Link
+            to="/editor"
+            className="flex gap-2 link pl-8 py-4"
+            onClick={handleLinkClick}
+          >
+            <i className="fi fi-rr-edit text-xl" />
+            <p>Write</p>
+          </Link>
+        )}
 
         <Link
           to="/profile"
