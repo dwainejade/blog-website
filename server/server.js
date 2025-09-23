@@ -1183,6 +1183,36 @@ server.post("/get-replies", async (req, res) => {
   }
 });
 
+// Middleware to check if user is superadmin
+const verifySuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== "superadmin") {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Superadmin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
+// Middleware to check if user is admin or superadmin
+const verifyAdminOrSuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Admin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
 // Delete comment (admin or superadmin only)
 server.delete(
   "/delete-comment",
@@ -1228,36 +1258,6 @@ server.delete(
     }
   }
 );
-
-// Middleware to check if user is superadmin
-const verifySuperAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user || user.role !== "superadmin") {
-      return res
-        .status(403)
-        .json({ error: "Access denied. Superadmin privileges required." });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to verify admin status" });
-  }
-};
-
-// Middleware to check if user is admin or superadmin
-const verifyAdminOrSuperAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user);
-    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
-      return res
-        .status(403)
-        .json({ error: "Access denied. Admin privileges required." });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to verify admin status" });
-  }
-};
 
 // SUPERADMIN ENDPOINTS
 
