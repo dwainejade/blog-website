@@ -10,7 +10,7 @@ const Nav = ({ type = "editor" }) => {
 
   if (type === "editor") {
     return (
-      <nav className="navbar">
+      <nav className="navbar w-screen overflow-x-hidden">
         <Link to="/" className="flex-none w-10">
           <img src={logo} alt="Logo" className="w-full" />
         </Link>
