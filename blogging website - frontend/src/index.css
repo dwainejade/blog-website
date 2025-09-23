@@ -88,6 +88,10 @@ html {
     @apply btn-dark bg-grey text-black;
   }
 
+  .btn-red {
+    @apply btn-dark bg-red text-white;
+  }
+
   .input-box {
     @apply w-[100%] rounded-md p-4 bg-grey pl-12 border border-grey focus:bg-transparent placeholder:text-black;
   }

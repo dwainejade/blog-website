@@ -59,6 +59,9 @@ const formatDataToSend = (user) => {
     username: user.personal_info.username,
     fullname: user.personal_info.fullname,
     id: user._id,
+    role: user.role,
+    personal_info: user.personal_info,
+    account_info: user.account_info,
   };
 };
 
@@ -732,20 +735,29 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
 
     // Validation
     if (fullname && fullname.length < 3) {
-      return res.status(400).json({ error: "Fullname must be at least 3 characters long" });
+      return res
+        .status(400)
+        .json({ error: "Fullname must be at least 3 characters long" });
     }
 
     if (username && username.length < 3) {
-      return res.status(400).json({ error: "Username must be at least 3 characters long" });
+      return res
+        .status(400)
+        .json({ error: "Username must be at least 3 characters long" });
     }
 
     if (bio && bio.length > 200) {
-      return res.status(400).json({ error: "Bio should not be more than 200 characters" });
+      return res
+        .status(400)
+        .json({ error: "Bio should not be more than 200 characters" });
     }
 
     // Check if username is already taken (if updating username)
     if (username) {
-      const existingUser = await User.findOne({ "personal_info.username": username, _id: { $ne: userId } });
+      const existingUser = await User.findOne({
+        "personal_info.username": username,
+        _id: { $ne: userId },
+      });
       if (existingUser) {
         return res.status(400).json({ error: "Username is already taken" });
       }
@@ -757,7 +769,7 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
     if (username) updateData["personal_info.username"] = username;
     if (bio !== undefined) updateData["personal_info.bio"] = bio;
     if (social_links) {
-      Object.keys(social_links).forEach(platform => {
+      Object.keys(social_links).forEach((platform) => {
         updateData[`social_links.${platform}`] = social_links[platform];
       });
     }
@@ -776,7 +788,7 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
       email: updatedUser.personal_info?.email || "",
       bio: updatedUser.personal_info?.bio || "",
       profile_img: updatedUser.personal_info?.profile_img || "",
-      ...(updatedUser.social_links || {})
+      ...(updatedUser.social_links || {}),
     };
 
     res.status(200).json({ user: flattenedUser });
@@ -812,7 +824,7 @@ server.put("/update-profile-img", verifyJWT, async (req, res) => {
       email: updatedUser.personal_info.email,
       bio: updatedUser.personal_info.bio,
       profile_img: updatedUser.personal_info.profile_img,
-      ...updatedUser.social_links
+      ...updatedUser.social_links,
     };
 
     res.status(200).json({ user: flattenedUser });
@@ -828,12 +840,15 @@ server.put("/change-password", verifyJWT, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "Current and new passwords are required" });
+      return res
+        .status(400)
+        .json({ error: "Current and new passwords are required" });
     }
 
     if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({
-        error: "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letters"
+        error:
+          "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letters",
       });
     }
 
@@ -845,11 +860,18 @@ server.put("/change-password", verifyJWT, async (req, res) => {
 
     // Check if user has Google auth (no password to change)
     if (user.google_auth) {
-      return res.status(400).json({ error: "Cannot change password for Google authenticated accounts" });
+      return res
+        .status(400)
+        .json({
+          error: "Cannot change password for Google authenticated accounts",
+        });
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.personal_info.password);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.personal_info.password
+    );
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ error: "Current password is incorrect" });
     }
@@ -859,7 +881,7 @@ server.put("/change-password", verifyJWT, async (req, res) => {
 
     // Update password
     await User.findByIdAndUpdate(userId, {
-      $set: { "personal_info.password": hashedNewPassword }
+      $set: { "personal_info.password": hashedNewPassword },
     });
 
     res.status(200).json({ message: "Password changed successfully" });
@@ -890,17 +912,27 @@ server.put("/update-email", verifyJWT, async (req, res) => {
 
     // Check if user has Google auth
     if (user.google_auth) {
-      return res.status(400).json({ error: "Cannot change email for Google authenticated accounts" });
+      return res
+        .status(400)
+        .json({
+          error: "Cannot change email for Google authenticated accounts",
+        });
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.personal_info.password);
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.personal_info.password
+    );
     if (!isPasswordValid) {
       return res.status(400).json({ error: "Password is incorrect" });
     }
 
     // Check if email is already taken
-    const existingUser = await User.findOne({ "personal_info.email": email, _id: { $ne: userId } });
+    const existingUser = await User.findOne({
+      "personal_info.email": email,
+      _id: { $ne: userId },
+    });
     if (existingUser) {
       return res.status(400).json({ error: "Email is already registered" });
     }
@@ -920,10 +952,12 @@ server.put("/update-email", verifyJWT, async (req, res) => {
       email: updatedUser.personal_info.email,
       bio: updatedUser.personal_info.bio,
       profile_img: updatedUser.personal_info.profile_img,
-      ...updatedUser.social_links
+      ...updatedUser.social_links,
     };
 
-    res.status(200).json({ user: flattenedUser, message: "Email updated successfully" });
+    res
+      .status(200)
+      .json({ user: flattenedUser, message: "Email updated successfully" });
   } catch (error) {
     console.error("Error updating email:", error);
     if (error.code === 11000) {
@@ -945,7 +979,9 @@ server.get("/unsplash/search/photos", async (req, res) => {
     // Ensure per_page doesn't exceed Unsplash's limit of 30
     const limitedPerPage = Math.min(parseInt(per_page), 30);
 
-    let apiUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${limitedPerPage}`;
+    let apiUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
+      query
+    )}&page=${page}&per_page=${limitedPerPage}`;
 
     if (orientation) {
       apiUrl += `&orientation=${orientation}`;
@@ -970,12 +1006,12 @@ server.get("/unsplash/search/photos", async (req, res) => {
       totalResults: data.total,
       totalPages: data.total_pages,
       hasNextPage: parseInt(page) < data.total_pages,
-      hasPrevPage: parseInt(page) > 1
+      hasPrevPage: parseInt(page) > 1,
     };
 
     res.json({
       ...data,
-      pagination: paginationInfo
+      pagination: paginationInfo,
     });
   } catch (error) {
     console.error("Unsplash proxy error:", error);
@@ -987,14 +1023,11 @@ server.get("/unsplash/photos/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const response = await fetch(
-      `https://api.unsplash.com/photos/${id}`,
-      {
-        headers: {
-          Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
-        },
-      }
-    );
+    const response = await fetch(`https://api.unsplash.com/photos/${id}`, {
+      headers: {
+        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Unsplash API error: ${response.status}`);
@@ -1040,7 +1073,9 @@ server.post("/add-comment", verifyJWT, async (req, res) => {
     const { _id: blog_id, comment, blog_author, replying_to } = req.body;
 
     if (!comment.length) {
-      return res.status(403).json({ error: "Write something to leave a comment" });
+      return res
+        .status(403)
+        .json({ error: "Write something to leave a comment" });
     }
 
     const commentObj = {
@@ -1096,7 +1131,10 @@ server.post("/get-blog-comments", async (req, res) => {
     let maxLimit = 5;
 
     Comment.find({ blog_id, isReply: { $ne: true } })
-      .populate("commented_by", "personal_info.username personal_info.fullname personal_info.profile_img")
+      .populate(
+        "commented_by",
+        "personal_info.username personal_info.fullname personal_info.profile_img"
+      )
       .skip(skip)
       .limit(maxLimit)
       .sort({ commentedAt: -1 })
@@ -1128,7 +1166,8 @@ server.post("/get-replies", async (req, res) => {
         },
         populate: {
           path: "commented_by",
-          select: "personal_info.profile_img personal_info.fullname personal_info.username",
+          select:
+            "personal_info.profile_img personal_info.fullname personal_info.username",
         },
         select: "-blog_id -updatedAt",
       })
@@ -1144,51 +1183,331 @@ server.post("/get-replies", async (req, res) => {
   }
 });
 
-// Delete comment (admin only)
-server.delete("/delete-comment", verifyJWT, async (req, res) => {
-  try {
-    const user_id = req.user;
-    const { _id: comment_id } = req.body;
+// Delete comment (admin or superadmin only)
+server.delete(
+  "/delete-comment",
+  verifyJWT,
+  verifyAdminOrSuperAdmin,
+  async (req, res) => {
+    try {
+      const user_id = req.user;
+      const { _id: comment_id } = req.body;
 
-    // Get user to check if admin
-    const user = await User.findById(user_id);
-    if (!user || user.role !== 'admin') {
-      return res.status(403).json({ error: "Access denied. Admin privileges required." });
-    }
+      const comment = await Comment.findById(comment_id);
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
 
-    const comment = await Comment.findById(comment_id);
-    if (!comment) {
-      return res.status(404).json({ error: "Comment not found" });
-    }
+      // Delete the comment and its children
+      await Comment.findByIdAndDelete(comment_id);
 
-    // Delete the comment and its children
-    await Comment.findByIdAndDelete(comment_id);
+      // If it has children, delete them too
+      if (comment.children.length) {
+        await Comment.deleteMany({ _id: { $in: comment.children } });
+      }
 
-    // If it has children, delete them too
-    if (comment.children.length) {
-      await Comment.deleteMany({ _id: { $in: comment.children } });
-    }
-
-    // Update blog comment count
-    await Blog.findByIdAndUpdate(comment.blog_id, {
-      $pull: { comments: comment_id },
-      $inc: {
-        "activity.total_comments": -(1 + comment.children.length),
-        "activity.total_parent_comments": comment.isReply ? 0 : -1,
-      },
-    });
-
-    // If it's a reply, remove from parent's children
-    if (comment.parent) {
-      await Comment.findByIdAndUpdate(comment.parent, {
-        $pull: { children: comment_id },
+      // Update blog comment count
+      await Blog.findByIdAndUpdate(comment.blog_id, {
+        $pull: { comments: comment_id },
+        $inc: {
+          "activity.total_comments": -(1 + comment.children.length),
+          "activity.total_parent_comments": comment.isReply ? 0 : -1,
+        },
       });
-    }
 
-    return res.status(200).json({ message: "Comment deleted successfully" });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+      // If it's a reply, remove from parent's children
+      if (comment.parent) {
+        await Comment.findByIdAndUpdate(comment.parent, {
+          $pull: { children: comment_id },
+        });
+      }
+
+      return res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
+);
+
+// Middleware to check if user is superadmin
+const verifySuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== "superadmin") {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Superadmin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
+// Middleware to check if user is admin or superadmin
+const verifyAdminOrSuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Admin privileges required." });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to verify admin status" });
+  }
+};
+
+// SUPERADMIN ENDPOINTS
+
+// Get platform statistics
+server.get(
+  "/superadmin/stats",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const totalUsers = await User.countDocuments();
+      const totalBlogs = await Blog.countDocuments();
+      const totalComments = await Comment.countDocuments();
+      const totalDrafts = await Blog.countDocuments({ draft: true });
+
+      // Get growth metrics for last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const newUsers = await User.countDocuments({
+        joinedAt: { $gte: thirtyDaysAgo },
+      });
+      const newBlogs = await Blog.countDocuments({
+        publishedAt: { $gte: thirtyDaysAgo },
+      });
+      const newComments = await Comment.countDocuments({
+        commentedAt: { $gte: thirtyDaysAgo },
+      });
+
+      res.status(200).json({
+        totalUsers,
+        totalBlogs,
+        totalComments,
+        totalDrafts,
+        growth: {
+          newUsers,
+          newBlogs,
+          newComments,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch platform statistics" });
+    }
+  }
+);
+
+// Get all users for user management
+server.get(
+  "/superadmin/users",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const { page = 1, limit = 20, search = "", role = "" } = req.query;
+
+      let query = {};
+      if (search) {
+        query.$or = [
+          { "personal_info.fullname": { $regex: search, $options: "i" } },
+          { "personal_info.username": { $regex: search, $options: "i" } },
+          { "personal_info.email": { $regex: search, $options: "i" } },
+        ];
+      }
+      if (role) {
+        query.role = role;
+      }
+
+      const users = await User.find(query)
+        .select(
+          "personal_info.fullname personal_info.username personal_info.email personal_info.profile_img role account_info joinedAt"
+        )
+        .sort({ joinedAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      const total = await User.countDocuments(query);
+
+      res.status(200).json({
+        users,
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  }
+);
+
+// Update user role
+server.put(
+  "/superadmin/users/:userId/role",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { role } = req.body;
+
+      if (!["user", "admin", "superadmin"].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { role },
+        { new: true }
+      ).select("personal_info.fullname personal_info.username role");
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.status(200).json({ message: "User role updated successfully", user });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update user role" });
+    }
+  }
+);
+
+// Delete user account
+server.delete(
+  "/superadmin/users/:userId",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+
+      // Don't allow deleting other superadmins
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (targetUser.role === "superadmin") {
+        return res
+          .status(403)
+          .json({ error: "Cannot delete superadmin accounts" });
+      }
+
+      // Delete user's blogs and comments
+      await Blog.deleteMany({ author: userId });
+      await Comment.deleteMany({ commented_by: userId });
+      await User.findByIdAndDelete(userId);
+
+      res.status(200).json({ message: "User account deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete user account" });
+    }
+  }
+);
+
+// Get all blogs for content moderation
+server.get(
+  "/superadmin/blogs",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const { page = 1, limit = 20, search = "", status = "" } = req.query;
+
+      let query = {};
+      if (search) {
+        query.$or = [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+        ];
+      }
+      if (status === "draft") {
+        query.draft = true;
+      } else if (status === "published") {
+        query.draft = false;
+      }
+
+      const blogs = await Blog.find(query)
+        .populate(
+          "author",
+          "personal_info.fullname personal_info.username personal_info.profile_img"
+        )
+        .sort({ publishedAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      const total = await Blog.countDocuments(query);
+
+      res.status(200).json({
+        blogs,
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch blogs" });
+    }
+  }
+);
+
+// Delete any blog
+server.delete(
+  "/superadmin/blogs/:blogId",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const { blogId } = req.params;
+
+      const blog = await Blog.findByIdAndDelete(blogId);
+      if (!blog) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+
+      // Delete associated comments
+      await Comment.deleteMany({ blog_id: blogId });
+
+      res.status(200).json({ message: "Blog deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete blog" });
+    }
+  }
+);
+
+// Get all admins
+server.get(
+  "/superadmin/admins",
+  verifyJWT,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const admins = await User.find({
+        role: { $in: ["admin", "superadmin"] },
+      }).select(
+        "personal_info.fullname personal_info.username personal_info.email personal_info.profile_img role joinedAt"
+      );
+
+      res.status(200).json({ admins });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch admins" });
+    }
+  }
+);
+
+// Health check / ping route for UptimeRobot
+server.get("/ping", (req, res) => {
+  console.log("Ping received at:", new Date().toISOString());
+  res.status(200).json({
+    status: "alive",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+  });
 });
 
 server.listen(PORT, () => {

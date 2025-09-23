@@ -51,6 +51,17 @@ const UserNavigationPanel = ({ show, hide }) => {
           <p>Dashboard</p>
         </Link>
 
+        {user?.role === 'superadmin' && (
+          <Link
+            to="/superadmin"
+            className="flex gap-2 link pl-8 py-4"
+            onClick={handleLinkClick}
+          >
+            <i className="fi fi-rr-settings-sliders text-xl" />
+            <p>Superadmin</p>
+          </Link>
+        )}
+
         <Link
           to="/editor"
           className="flex gap-2 link pl-8 py-4"

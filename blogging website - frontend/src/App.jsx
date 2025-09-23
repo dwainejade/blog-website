@@ -9,6 +9,7 @@ import DashboardPage from "./pages/dashboard.page";
 import ProfilePage from "./pages/profile.page";
 import ChangePassword from "./pages/change-password.page";
 import ChangeEmail from "./pages/change-email.page";
+import SuperAdminDashboard from "./pages/superadmin-dashboard.page";
 import useAuthStore from "./stores/authStore";
 
 const App = () => {
@@ -28,6 +29,7 @@ const App = () => {
           <Route index element={<HomePage />} />
           <Route path="blog/:blog_id" element={<BlogPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="superadmin" element={<SuperAdminDashboard />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings/change-password" element={<ChangePassword />} />
           <Route path="settings/change-email" element={<ChangeEmail />} />
