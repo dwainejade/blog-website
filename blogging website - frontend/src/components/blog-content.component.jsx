@@ -184,6 +184,15 @@ const BlogContent = ({ content }) => {
               </div>
             );
 
+          case "delimiter":
+            return (
+              <div key={index} className="my-10 flex justify-center">
+                <div className="text-center text-3xl text-zinc-800 tracking-widest">
+                  * * *
+                </div>
+              </div>
+            );
+
           default:
             return (
               <div key={index} className="my-4">
