@@ -15,6 +15,22 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Open Sans";
+  src: url("./fonts/open-sans/OpenSans-VariableFont.woff2") format("woff2");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Open Sans";
+  src: url("./fonts/open-sans/OpenSans-Italic-VariableFont.woff2") format("woff2");
+  font-weight: 300 800;
+  font-style: italic;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -117,7 +133,7 @@ html {
 
   #textEditor *,
   .blog-page-content * {
-    @apply font-gelasio text-xl leading-10 md:text-2xl;
+    @apply font-opensans text-xl leading-10 md:text-2xl;
   }
 
   #textEditor a,

@@ -22,3 +22,60 @@ Content-Type: application/json
     },
     "tags":["tag1", "tag two"]
 }
+
+###
+
+### Add comment (requires signin cookie)
+POST http://localhost:3000/add-comment
+Content-Type: application/json
+
+{
+    "_id": "68caea19d590c898f438df70",
+    "blog_author": "68caea19d590c898f438df70",
+    "comment": "This is my test comment!"
+}
+
+###
+
+### Add reply to comment (requires signin cookie)
+POST http://localhost:3000/add-comment
+Content-Type: application/json
+
+{
+    "_id": "68caea19d590c898f438df70",
+    "blog_author": "68caea19d590c898f438df70",
+    "comment": "This is a reply to the comment!",
+    "replying_to": "68d109ddc003446133a09cea"
+}
+
+###
+
+### Get comments for a blog
+POST http://localhost:3000/get-blog-comments
+Content-Type: application/json
+
+{
+    "blog_id": "BLOG_ID_HERE",
+    "skip": 0
+}
+
+###
+
+### Get replies for a comment
+POST http://localhost:3000/get-replies
+Content-Type: application/json
+
+{
+    "_id": "COMMENT_ID_HERE",
+    "skip": 0
+}
+
+###
+
+### Delete comment (admin only, requires signin cookie)
+DELETE http://localhost:3000/delete-comment
+Content-Type: application/json
+
+{
+    "_id": "COMMENT_ID_HERE"
+}

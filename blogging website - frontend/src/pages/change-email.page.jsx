@@ -17,11 +17,15 @@ const ChangeEmail = () => {
     e.preventDefault();
 
     if (user?.google_auth) {
-      return toast.error("Cannot change email for Google authenticated accounts");
+      return toast.error(
+        "Cannot change email for Google authenticated accounts"
+      );
     }
 
     const formData = new FormData(formRef.current);
-    const { newEmail, confirmEmail, password } = Object.fromEntries(formData.entries());
+    const { newEmail, confirmEmail, password } = Object.fromEntries(
+      formData.entries()
+    );
 
     if (!newEmail || !confirmEmail || !password) {
       return toast.error("All fields are required");
@@ -60,7 +64,9 @@ const ChangeEmail = () => {
 
   const handleShowForm = () => {
     if (user?.google_auth) {
-      return toast.error("Cannot change email for Google authenticated accounts");
+      return toast.error(
+        "Cannot change email for Google authenticated accounts"
+      );
     }
     setShowForm(true);
   };
@@ -69,7 +75,9 @@ const ChangeEmail = () => {
     <AnimationWrapper>
       <Toaster />
       <div className="max-w-md mx-auto py-10">
-        <h1 className="text-2xl font-gelasio text-center mb-8">Change Email Address</h1>
+        <h1 className="text-2xl font-gelasio text-center mb-8">
+          Change Email Address
+        </h1>
 
         {user?.google_auth && (
           <div className="bg-red/10 border border-red/20 rounded-lg p-4 mb-6">
@@ -99,7 +107,8 @@ const ChangeEmail = () => {
               <i className="fi fi-rr-envelope-open text-yellow text-3xl mb-4"></i>
               <h3 className="font-medium mb-2">Email Change Verification</h3>
               <p className="text-sm text-dark-grey mb-4">
-                For security reasons, you'll need to verify your current password to change your email address.
+                For security reasons, you'll need to verify your current
+                password to change your email address.
               </p>
               <button
                 onClick={handleShowForm}
@@ -179,7 +188,10 @@ const ChangeEmail = () => {
           <div className="mt-6 text-center">
             <p className="text-xs text-dark-grey">
               Having trouble?{" "}
-              <Link to="/contact-support" className="text-purple hover:underline">
+              <Link
+                to="/contact-support"
+                className="text-purple hover:underline"
+              >
                 Contact Support
               </Link>
             </p>

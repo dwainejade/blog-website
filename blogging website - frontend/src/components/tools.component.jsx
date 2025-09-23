@@ -1,6 +1,6 @@
 import Embed from "@editorjs/embed";
 import List from "@editorjs/list";
-import Image from "@editorjs/image";
+// import Image from "@editorjs/image";
 import Header from "@editorjs/header";
 import Code from "@editorjs/code";
 import Quote from "@editorjs/quote";
@@ -8,6 +8,8 @@ import InlineCode from "@editorjs/inline-code";
 import Marker from "@editorjs/marker";
 import Link from "@editorjs/link";
 import InlineImage from "editorjs-inline-image";
+import Delimiter from "@editorjs/delimiter";
+
 import { uploadImageToCloudinary } from "../utils/cloudinary";
 
 const uploadImageByUrl = (e) => {
@@ -93,4 +95,5 @@ export const tools = {
   inlineCode: InlineCode,
   marker: Marker,
   link: Link,
+  delimiter: Delimiter,
 };

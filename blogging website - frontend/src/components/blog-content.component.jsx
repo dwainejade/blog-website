@@ -28,11 +28,11 @@ const BlogContent = ({ content }) => {
                 case 3:
                   return "font-inter text-3xl leading-loose max-md:text-2xl max-md:leading-normal my-6";
                 case 4:
-                  return "font-gelasio text-xl leading-10 md:text-2xl my-4";
+                  return "font-inter text-xl leading-10 md:text-2xl my-4";
                 case 5:
-                  return "font-gelasio text-xl leading-10 md:text-2xl my-4";
+                  return "font-inter text-xl leading-10 md:text-2xl my-4";
                 case 6:
-                  return "font-gelasio text-xl leading-10 md:text-2xl my-4";
+                  return "font-inter text-xl leading-10 md:text-2xl my-4";
                 default:
                   return "font-inter text-3xl leading-loose max-md:text-2xl max-md:leading-normal my-6";
               }
@@ -49,7 +49,7 @@ const BlogContent = ({ content }) => {
             return (
               <p
                 key={index}
-                className="font-gelasio text-xl leading-10 md:text-2xl my-4"
+                className="font-open-sans text-xl leading-10 md:text-2xl my-4"
                 dangerouslySetInnerHTML={{ __html: block.data.text }}
               />
             );
@@ -65,7 +65,7 @@ const BlogContent = ({ content }) => {
                 {block.data.items.map((item, itemIndex) => (
                   <li
                     key={itemIndex}
-                    className="font-gelasio text-xl leading-10 md:text-2xl"
+                    className="font-open-sans text-xl leading-10 md:text-2xl"
                     dangerouslySetInnerHTML={{ __html: item }}
                   />
                 ))}
@@ -96,7 +96,7 @@ const BlogContent = ({ content }) => {
                   className="w-full object-cover"
                 />
                 {block.data.caption && (
-                  <p className="text-center text-dark-grey text-sm mt-2">
+                  <p className="text-center text-dark-grey text-[16px] mt-2 px-2 leading-normal">
                     {block.data.caption}
                   </p>
                 )}
@@ -177,10 +177,19 @@ const BlogContent = ({ content }) => {
                   />
                 </div>
                 {block.data.caption && (
-                  <p className="text-center text-dark-grey text-sm mt-2">
+                  <p className="text-center text-dark-grey text-[16px] mt-2 leading-normal">
                     {block.data.caption}
                   </p>
                 )}
+              </div>
+            );
+
+          case "delimiter":
+            return (
+              <div key={index} className="my-10 flex justify-center">
+                <div className="text-center text-3xl text-zinc-800 tracking-widest">
+                  * * *
+                </div>
               </div>
             );
 
