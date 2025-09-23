@@ -96,7 +96,7 @@ const BlogContent = ({ content }) => {
                   className="w-full object-cover"
                 />
                 {block.data.caption && (
-                  <p className="text-center text-dark-grey text-sm mt-2">
+                  <p className="text-center text-dark-grey text-[16px] mt-2 px-2 leading-normal">
                     {block.data.caption}
                   </p>
                 )}
@@ -177,7 +177,7 @@ const BlogContent = ({ content }) => {
                   />
                 </div>
                 {block.data.caption && (
-                  <p className="text-center text-dark-grey text-sm mt-2">
+                  <p className="text-center text-dark-grey text-[16px] mt-2 leading-normal">
                     {block.data.caption}
                   </p>
                 )}
