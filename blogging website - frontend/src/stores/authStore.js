@@ -114,6 +114,17 @@ const useAuthStore = create(
       });
       return true;
     } catch (error) {
+      // Handle network errors more gracefully on mobile
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        // Network error - don't log user out, just mark as initialized
+        set({
+          isLoading: false,
+          isInitialized: true,
+          error: 'Network connection issue',
+        });
+        return get().isAuthenticated; // Return current auth state
+      }
+
       if (error.response?.status === 401) {
         try {
           const { data } = await axios.post(
@@ -137,6 +148,8 @@ const useAuthStore = create(
           console.warn('Token refresh failed:', refreshError);
         }
       }
+
+      // Only log out on actual 401/403 errors
       set({
         user: null,
         isAuthenticated: false,
@@ -270,9 +283,12 @@ const useAuthStore = create(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        if (state) {
-          // Verify auth on rehydration for mobile browsers
-          state.checkAuth();
+        if (state && state.isAuthenticated) {
+          // Only verify auth if we think we're authenticated
+          // This prevents unnecessary logout on mobile
+          setTimeout(() => {
+            state.checkAuth();
+          }, 100);
         }
       },
     }
@@ -299,6 +315,11 @@ axios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Handle network errors more gracefully on mobile
+    if (!error.response && error.code === 'NETWORK_ERROR') {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest._skipInterceptor) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -316,12 +337,15 @@ axios.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(`${getServerDomain()}/refresh`);
+        await axios.post(`${getServerDomain()}/refresh`, {}, { withCredentials: true });
         processQueue(null);
         return axios(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        useAuthStore.getState().logout();
+        // Only logout on explicit auth failure, not network issues
+        if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+          useAuthStore.getState().logout();
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
