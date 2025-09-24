@@ -7,17 +7,16 @@ const PageAnimation = ({
   initial = { opacity: 0 },
   animate = { opacity: 1 },
   exit = { opacity: 0 },
-  transition = { duration: 0.5, ease: "easeOut" },
+  transition = { duration: 0.3, ease: "easeOut" },
 }) => {
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="wait">
       <motion.div
         key={keyValue}
         initial={initial}
         animate={animate}
         exit={exit}
         transition={transition}
-        layout
         className={className}
       >
         {children}
