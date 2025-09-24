@@ -62,6 +62,23 @@ server.use(
 
 mongoose.connect(process.env.DB_LOCATION, {
   autoIndex: true,
+}).catch(err => {
+  console.error('MongoDB connection error:', err.message);
+  console.error('Please check your MongoDB Atlas configuration and IP whitelist.');
+  // Don't exit - let server start anyway for development
+});
+
+// MongoDB connection event handlers
+mongoose.connection.on('connected', () => {
+  console.log('✅ Connected to MongoDB Atlas');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ Disconnected from MongoDB');
 });
 
 // Explicit preflight handling for mobile browsers
@@ -660,7 +677,7 @@ server.get("/latest-blogs", async (req, res) => {
         "personal_info.profile_img personal_info.username personal_info.fullname -_id"
       )
       .sort({ publishedAt: -1 })
-      .select("blog_id title des banner activity tags publishedAt -_id")
+      .select("blog_id title description banner activity tags publishedAt -_id")
       .skip(skip)
       .limit(limit);
 
