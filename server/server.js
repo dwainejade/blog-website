@@ -1684,6 +1684,97 @@ server.get("/ping", (req, res) => {
   });
 });
 
+// Search endpoint - blogs, users, tags
+server.get("/search", async (req, res) => {
+  try {
+    const { query, type = "all", page = 1, limit = 10 } = req.query;
+
+    if (!query || query.trim().length < 1) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    const searchQuery = query.trim();
+    const limitNum = Math.min(parseInt(limit), 20);
+    const skip = (parseInt(page) - 1) * limitNum;
+
+    let results = {
+      blogs: [],
+      users: [],
+      total: 0
+    };
+
+    // Search blogs
+    if (type === "all" || type === "blogs") {
+      let blogQuery;
+
+      // Check if this is an exact tag search (starts with # or matches a tag exactly)
+      const isTagSearch = searchQuery.startsWith('#') ||
+        (type === "blogs" && await Blog.exists({ draft: false, tags: searchQuery }));
+
+      if (isTagSearch) {
+        // Exact tag match for better tag search results
+        const tagName = searchQuery.startsWith('#') ? searchQuery.slice(1) : searchQuery;
+        blogQuery = {
+          draft: false,
+          tags: { $in: [new RegExp(`^${tagName}$`, "i")] }
+        };
+      } else {
+        // General search across title, description, and tags
+        blogQuery = {
+          draft: false,
+          $or: [
+            { title: { $regex: searchQuery, $options: "i" } },
+            { description: { $regex: searchQuery, $options: "i" } },
+            { tags: { $in: [new RegExp(searchQuery, "i")] } }
+          ]
+        };
+      }
+
+      const blogs = await Blog.find(blogQuery)
+        .populate("author", "personal_info.profile_img personal_info.username personal_info.fullname -_id")
+        .select("blog_id title description banner activity tags publishedAt -_id")
+        .sort({ publishedAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      results.blogs = blogs;
+    }
+
+    // Search users
+    if (type === "all" || type === "users") {
+      const userQuery = {
+        $or: [
+          { "personal_info.fullname": { $regex: searchQuery, $options: "i" } },
+          { "personal_info.username": { $regex: searchQuery, $options: "i" } },
+          { "personal_info.bio": { $regex: searchQuery, $options: "i" } }
+        ]
+      };
+
+      const users = await User.find(userQuery)
+        .select("personal_info.fullname personal_info.username personal_info.profile_img personal_info.bio account_info joinedAt -_id")
+        .sort({ joinedAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      results.users = users;
+    }
+
+    results.total = results.blogs.length + results.users.length;
+
+    res.status(200).json({
+      query: searchQuery,
+      type,
+      page: parseInt(page),
+      limit: limitNum,
+      results
+    });
+
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
 // Get user profile by username
 server.get("/user/:username", async (req, res) => {
   try {

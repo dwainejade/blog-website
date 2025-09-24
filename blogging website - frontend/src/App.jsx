@@ -5,6 +5,7 @@ import HomePage from "./pages/home.page";
 import UserAuthForm from "./pages/userAuthForm.page";
 import EditorPage from "./pages/editor.pages";
 import BlogPage from "./pages/blog.page";
+import SearchPage from "./pages/search.page";
 import DashboardPage from "./pages/dashboard.page";
 import ProfilePage from "./pages/profile.page";
 import ChangePassword from "./pages/change-password.page";
@@ -30,6 +31,7 @@ const App = () => {
         <Route path="/" element={<Navbar />}>
           <Route index element={<HomePage />} />
           <Route path="blog/:blog_id" element={<BlogPage />} />
+          <Route path="search" element={<SearchPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="superadmin" element={<SuperAdminDashboard />} />
           <Route path="profile" element={<ProfilePage />} />

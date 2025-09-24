@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import logo from "../imgs/logo.png";
 import useAuthStore from "../stores/authStore";
 import UserNavigationPanel from "./user-navigation.component";
@@ -7,7 +7,18 @@ import UserNavigationPanel from "./user-navigation.component";
 const Navbar = () => {
   const [searchBarOpen, setSearchBarOpen] = useState(false);
   const [userPanelOpen, setUserPanelOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { user, isAuthenticated, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchBarOpen(false);
+      setSearchQuery("");
+    }
+  };
 
   return (
     <>
@@ -22,14 +33,21 @@ const Navbar = () => {
             (searchBarOpen ? "show" : "hidden")
           }
         >
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
-              placeholder="Search"
-              className="w-full md:auto bg-grey p-4 pl-6 pr-12 rounded-full placeholder:italic placeholder:text-sm placeholder:text-dark-grey"
+              placeholder="Search blogs, users, tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full md:w-auto bg-grey p-4 pl-6 pr-12 rounded-full placeholder:italic placeholder:text-sm placeholder:text-dark-grey"
             />
-            <i className="fi fi-rr-search absolute right-6 top-1/2 -translate-y-1/2 text-dark-grey text-xl pointer-events-none" />
-          </div>
+            <button
+              type="submit"
+              className="absolute right-6 top-1/2 -translate-y-1/2 text-dark-grey text-xl hover:text-black"
+            >
+              <i className="fi fi-rr-search" />
+            </button>
+          </form>
         </div>
 
         <div className="flex items-center gap-3 md:gap-6 ml-auto">
