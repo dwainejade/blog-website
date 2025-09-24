@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import PageAnimation from "../common/page-animation";
+import AnimationWrapper from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
 import useBlogStore from "../stores/blogStore";
 import DashboardBlogCard from "../components/dashboard-blog-card.component";
@@ -14,7 +14,7 @@ const DashboardPage = () => {
     isLoadingUserBlogs,
     fetchUserBlogs,
     deleteBlog,
-    error: blogError
+    error: blogError,
   } = useBlogStore();
 
   useEffect(() => {
@@ -42,11 +42,11 @@ const DashboardPage = () => {
   }
 
   return (
-    <PageAnimation>
+    <AnimationWrapper>
       <section className="h-cover flex justify-center gap-10">
         <div className="w-full max-w-[1200px] mx-auto px-[5vw]">
           {/* Dashboard Header */}
-          <div className="flex items-center justify-between mb-8 pt-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 pt-8 gap-4">
             <div>
               <h1 className="font-bold text-2xl text-black">Dashboard</h1>
               <p className="text-dark-grey mt-2">
@@ -54,13 +54,14 @@ const DashboardPage = () => {
               </p>
             </div>
             <div className="flex gap-4">
-              {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              {(user?.role === "admin" || user?.role === "superadmin") && (
                 <button
-                  onClick={() => navigate('/editor')}
-                  className="btn-dark flex items-center gap-2"
+                  onClick={() => navigate("/editor")}
+                  className="btn-dark flex items-center gap-2 text-sm sm:text-base"
                 >
                   <i className="fi fi-rr-edit"></i>
-                  <span>Write New Blog</span>
+                  <span className="hidden xs:inline">Write New Blog</span>
+                  <span className="xs:hidden">Write</span>
                 </button>
               )}
             </div>
@@ -73,7 +74,7 @@ const DashboardPage = () => {
               {/* Quick Stats */}
               <div className="bg-white border border-grey rounded-lg p-6 mb-6">
                 <h2 className="font-medium text-xl mb-4">Overview</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-grey/20 rounded-lg">
                     <div className="text-2xl font-bold text-black">
                       {user?.account_info?.total_posts || 0}
@@ -94,7 +95,11 @@ const DashboardPage = () => {
                   </div>
                   <div className="text-center p-4 bg-grey/20 rounded-lg">
                     <div className="text-2xl font-bold text-black">
-                      {userBlogs?.reduce((total, blog) => total + (blog.activity?.total_comments || 0), 0) || 0}
+                      {userBlogs?.reduce(
+                        (total, blog) =>
+                          total + (blog.activity?.total_comments || 0),
+                        0
+                      ) || 0}
                     </div>
                     <div className="text-sm text-dark-grey">Comments</div>
                   </div>
@@ -136,10 +141,16 @@ const DashboardPage = () => {
                     ) : (
                       <div className="text-center py-8 text-dark-grey">
                         <i className="fi fi-rr-document text-4xl mb-4"></i>
-                        <p>No published blogs yet{(user?.role === 'admin' || user?.role === 'superadmin') ? '. Start writing your first blog!' : '. Only admins can create blogs.'}</p>
-                        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                        <p>
+                          No published blogs yet
+                          {user?.role === "admin" || user?.role === "superadmin"
+                            ? ". Start writing your first blog!"
+                            : ". Only admins can create blogs."}
+                        </p>
+                        {(user?.role === "admin" ||
+                          user?.role === "superadmin") && (
                           <button
-                            onClick={() => navigate('/editor')}
+                            onClick={() => navigate("/editor")}
                             className="btn-light mt-4"
                           >
                             Create Blog
@@ -157,7 +168,8 @@ const DashboardPage = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-medium text-xl">Recent Drafts</h2>
                     <span className="text-sm text-dark-grey">
-                      {userDrafts.length} draft{userDrafts.length !== 1 ? 's' : ''}
+                      {userDrafts.length} draft
+                      {userDrafts.length !== 1 ? "s" : ""}
                     </span>
                   </div>
                   <div className="space-y-6">
@@ -196,19 +208,17 @@ const DashboardPage = () => {
                 <div className="text-sm text-dark-grey mb-4">
                   {user?.personal_info?.bio || "No bio yet"}
                 </div>
-                <button className="btn-light w-full">
-                  Edit Profile
-                </button>
+                <button className="btn-light w-full">Edit Profile</button>
               </div>
 
               {/* Quick Actions */}
               <div className="bg-white border border-grey rounded-lg p-6">
                 <h3 className="font-medium text-lg mb-4">Quick Actions</h3>
                 <div className="space-y-3">
-                  {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                  {(user?.role === "admin" || user?.role === "superadmin") && (
                     <>
                       <button
-                        onClick={() => navigate('/editor')}
+                        onClick={() => navigate("/editor")}
                         className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3"
                       >
                         <i className="fi fi-rr-edit text-lg"></i>
@@ -234,7 +244,7 @@ const DashboardPage = () => {
           </div>
         </div>
       </section>
-    </PageAnimation>
+    </AnimationWrapper>
   );
 };
 

@@ -20,6 +20,24 @@ const PORT = process.env.PORT || 3000;
 const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
 
+// In-memory cache for view tracking (prevents spam)
+const viewCache = new Map();
+const VIEW_COOLDOWN = 30 * 60 * 1000; // 30 minutes cooldown per IP per blog
+
+// Helper function to check if view should be counted
+const shouldCountView = (blogId, ip) => {
+  const key = `${blogId}-${ip}`;
+  const lastView = viewCache.get(key);
+  const now = Date.now();
+
+  if (lastView && (now - lastView) < VIEW_COOLDOWN) {
+    return false;
+  }
+
+  viewCache.set(key, now);
+  return true;
+};
+
 server.use(express.json());
 server.use(cookieParser());
 server.use(
@@ -62,6 +80,23 @@ server.use(
 
 mongoose.connect(process.env.DB_LOCATION, {
   autoIndex: true,
+}).catch(err => {
+  console.error('MongoDB connection error:', err.message);
+  console.error('Please check your MongoDB Atlas configuration and IP whitelist.');
+  // Don't exit - let server start anyway for development
+});
+
+// MongoDB connection event handlers
+mongoose.connection.on('connected', () => {
+  console.log('✅ Connected to MongoDB Atlas');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ Disconnected from MongoDB');
 });
 
 // Explicit preflight handling for mobile browsers
@@ -660,7 +695,7 @@ server.get("/latest-blogs", async (req, res) => {
         "personal_info.profile_img personal_info.username personal_info.fullname -_id"
       )
       .sort({ publishedAt: -1 })
-      .select("blog_id title des banner activity tags publishedAt -_id")
+      .select("blog_id title description banner activity tags publishedAt -_id")
       .skip(skip)
       .limit(limit);
 
@@ -718,6 +753,21 @@ server.get("/get-blog/:blog_id", async (req, res) => {
       }
     } else if (blog.draft && !userId) {
       return res.status(404).json({ error: "Blog not found" });
+    }
+
+    // Increment view count for published blogs (not for drafts or author viewing their own blog)
+    if (!blog.draft && (!userId || blog.author?._id?.toString() !== userId)) {
+      const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress ||
+                      (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                      req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+
+      if (shouldCountView(blog.blog_id, clientIP)) {
+        await Blog.findByIdAndUpdate(blog._id, {
+          $inc: { "activity.total_reads": 1 }
+        });
+        // Update the blog object to reflect the new count
+        blog.activity.total_reads = (blog.activity.total_reads || 0) + 1;
+      }
     }
 
     res.status(200).json({ blog });
@@ -1632,6 +1682,137 @@ server.get("/ping", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
   });
+});
+
+// Search endpoint - blogs, users, tags
+server.get("/search", async (req, res) => {
+  try {
+    const { query, type = "all", page = 1, limit = 10 } = req.query;
+
+    if (!query || query.trim().length < 1) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    const searchQuery = query.trim();
+    const limitNum = Math.min(parseInt(limit), 20);
+    const skip = (parseInt(page) - 1) * limitNum;
+
+    let results = {
+      blogs: [],
+      users: [],
+      total: 0
+    };
+
+    // Search blogs
+    if (type === "all" || type === "blogs") {
+      let blogQuery;
+
+      // Check if this is an exact tag search (starts with # or matches a tag exactly)
+      const isTagSearch = searchQuery.startsWith('#') ||
+        (type === "blogs" && await Blog.exists({ draft: false, tags: searchQuery }));
+
+      if (isTagSearch) {
+        // Exact tag match for better tag search results
+        const tagName = searchQuery.startsWith('#') ? searchQuery.slice(1) : searchQuery;
+        blogQuery = {
+          draft: false,
+          tags: { $in: [new RegExp(`^${tagName}$`, "i")] }
+        };
+      } else {
+        // General search across title, description, and tags
+        blogQuery = {
+          draft: false,
+          $or: [
+            { title: { $regex: searchQuery, $options: "i" } },
+            { description: { $regex: searchQuery, $options: "i" } },
+            { tags: { $in: [new RegExp(searchQuery, "i")] } }
+          ]
+        };
+      }
+
+      const blogs = await Blog.find(blogQuery)
+        .populate("author", "personal_info.profile_img personal_info.username personal_info.fullname -_id")
+        .select("blog_id title description banner activity tags publishedAt -_id")
+        .sort({ publishedAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      results.blogs = blogs;
+    }
+
+    // Search users
+    if (type === "all" || type === "users") {
+      const userQuery = {
+        $or: [
+          { "personal_info.fullname": { $regex: searchQuery, $options: "i" } },
+          { "personal_info.username": { $regex: searchQuery, $options: "i" } },
+          { "personal_info.bio": { $regex: searchQuery, $options: "i" } }
+        ]
+      };
+
+      const users = await User.find(userQuery)
+        .select("personal_info.fullname personal_info.username personal_info.profile_img personal_info.bio account_info joinedAt -_id")
+        .sort({ joinedAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      results.users = users;
+    }
+
+    results.total = results.blogs.length + results.users.length;
+
+    res.status(200).json({
+      query: searchQuery,
+      type,
+      page: parseInt(page),
+      limit: limitNum,
+      results
+    });
+
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+// Get user profile by username
+server.get("/user/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const user = await User.findOne({ "personal_info.username": username })
+      .select("personal_info.fullname personal_info.username personal_info.profile_img personal_info.bio social_links account_info joinedAt")
+      .populate({
+        path: "blogs",
+        match: { draft: false },
+        select: "blog_id title banner description activity tags publishedAt",
+        options: {
+          sort: { publishedAt: -1 },
+          limit: 6
+        }
+      });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Format the response
+    const userProfile = {
+      personal_info: user.personal_info,
+      social_links: user.social_links || {},
+      account_info: {
+        total_posts: user.account_info?.total_posts || 0,
+        total_reads: user.account_info?.total_reads || 0
+      },
+      joinedAt: user.joinedAt,
+      blogs: user.blogs || []
+    };
+
+    res.status(200).json({ user: userProfile });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ error: "Failed to fetch user profile" });
+  }
 });
 
 // Debug endpoint for mobile authentication issues

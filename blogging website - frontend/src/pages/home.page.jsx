@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import PageAnimation from "../common/page-animation";
+import AnimationWrapper from "../common/page-animation";
 import BlogCard from "../components/blog-card.component";
 import useBlogStore from "../stores/blogStore";
 
@@ -11,7 +11,7 @@ const HomePage = () => {
   }, [fetchLatestBlogs]);
 
   return (
-    <PageAnimation>
+    <AnimationWrapper>
       <section className="">
         <div className="w-full max-w-[800px] mx-auto">
           <h1 className="font-medium text-xl mb-8">Latest Blogs</h1>
@@ -39,7 +39,7 @@ const HomePage = () => {
         </div>
         <div>{/* Filterd / trending */}</div>
       </section>
-    </PageAnimation>
+    </AnimationWrapper>
   );
 };
 

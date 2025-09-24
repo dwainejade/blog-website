@@ -8,15 +8,12 @@ import {
   calculateReadingTime,
   formatReadingTime,
 } from "../common/reading-time";
-import PageAnimation from "../common/page-animation";
-import useAuthStore from "../stores/authStore";
+import AnimationWrapper from "../common/page-animation";
 import EditorNav from "../components/editor-nav.component";
-import Comments from "../components/comments.component";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
-  // const navigate = useNavigate();
-  // const { user, isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,7 +46,7 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <PageAnimation>
+      <AnimationWrapper>
         <div className="h-cover relative p-10 bg-white center">
           <div className="text-center">
             <h1 className="text-4xl font-gelasio leading-7 text-dark-grey mb-4">
@@ -58,7 +55,7 @@ const BlogPage = () => {
             <p className="text-dark-grey text-xl leading-7">{error}</p>
           </div>
         </div>
-      </PageAnimation>
+      </AnimationWrapper>
     );
   }
 
@@ -85,99 +82,90 @@ const BlogPage = () => {
     tags,
     publishedAt,
     author: { personal_info: { fullname, username, profile_img } = {} } = {},
-    activity: { total_likes, total_comments } = {},
+    activity: { total_likes, total_comments, total_reads } = {},
   } = blog;
 
   const readingTime = calculateReadingTime(content);
 
   return (
-    <div className="max-w-[900px] w-screen center py-4 max-lg:px-[5vw]">
-      <EditorNav
-        type="blog"
-        blogTitle={title}
-        blogId={blog_id}
-        authorUsername={username}
-      />
+    <AnimationWrapper>
+      <div className="max-w-[900px] w-screen center py-4 max-lg:px-[5vw]">
+        <EditorNav
+          type="blog"
+          blogTitle={title}
+          blogId={blog_id}
+          authorUsername={username}
+        />
 
-      {banner && (
-        <div className="aspect-video bg-white border-4 border-grey mb-8">
-          <img
-            src={banner}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
-
-      <div className="mt-12">
-        <h2 className="text-4xl font-medium leading-tight capitalize mb-8">
-          {title}
-        </h2>
-
-        <div className="flex max-sm:flex-col justify-between my-8">
-          <div className="flex gap-5 items-center">
+        {banner && (
+          <div className="aspect-video bg-white border-4 border-grey mb-8">
             <img
-              src={profile_img}
-              alt={fullname}
-              className="w-12 h-12 rounded-full"
+              src={banner}
+              alt={title}
+              className="w-full h-full object-cover"
             />
-
-            <p className="capitalize text-xl">{fullname}</p>
           </div>
-
-          <div className="flex items-center gap-4 max-sm:mt-6 max-sm:ml-12 max-sm:pl-5">
-            <p className="text-dark-grey opacity-75">
-              Published on {formatDate(publishedAt)}
-            </p>
-            <span className="text-dark-grey opacity-75">•</span>
-            <p className="text-dark-grey opacity-75">
-              {formatReadingTime(readingTime)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="my-12 font-gelasio text-lg leading-8">
-        {description && (
-          <p className="text-xl leading-relaxed text-dark-grey mb-8">
-            {description}
-          </p>
         )}
-        <BlogContent content={content} />
-      </div>
 
-      <div className="flex gap-6 mt-12">
-        <div className="flex gap-3 items-center">
-          <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-red/20 hover:text-red">
-            <i className="fi fi-rr-heart"></i>
-            {total_likes || 0}
-          </button>
-        </div>
-        <div className="flex gap-3 items-center">
-          <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-twitter/20 hover:text-twitter">
-            <i className="fi fi-rr-comment-dots"></i>
-            {total_comments || 0}
-          </button>
-        </div>
-      </div>
-
-      {tags && tags.length > 0 && (
         <div className="mt-12">
-          <p className="text-2xl mt-14 mb-10 font-medium text-dark-grey">
-            Similar Blogs
-          </p>
-          <div className="flex flex-wrap gap-2 mt-7">
-            {tags.map((tag, index) => (
-              <span key={index} className="tag">
-                {tag}
-              </span>
-            ))}
+          <h2 className="text-4xl font-medium leading-tight capitalize mb-8">
+            {title}
+          </h2>
+
+          <div className="flex max-sm:flex-col justify-between my-8">
+            <div className="flex gap-5 items-center">
+              <img
+                src={profile_img}
+                alt={fullname}
+                className="w-12 h-12 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate(`/user/${username}`)}
+              />
+
+              <p
+                className="capitalize text-xl cursor-pointer hover:text-purple transition-colors"
+                onClick={() => navigate(`/user/${username}`)}
+              >
+                {fullname}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 max-sm:mt-6 max-sm:ml-12 max-sm:pl-5">
+              <p className="text-dark-grey opacity-75">
+                Published on {formatDate(publishedAt)}
+              </p>
+              <span className="text-dark-grey opacity-75">•</span>
+              <p className="text-dark-grey opacity-75">
+                {formatReadingTime(readingTime)}
+              </p>
+            </div>
           </div>
         </div>
-      )}
 
-      <Comments blog={blog} />
-    </div>
+        <div className="my-12 font-gelasio text-lg leading-8">
+          {description && (
+            <p className="text-xl leading-relaxed text-dark-grey mb-8">
+              {description}
+            </p>
+          )}
+          <BlogContent content={content} />
+        </div>
+
+        {tags && tags.length > 0 && (
+          <div className="mt-12">
+            <p className="text-2xl mt-14 mb-10 font-medium text-dark-grey">
+              Similar Blogs
+            </p>
+            <div className="flex flex-wrap gap-2 mt-7">
+              {tags.map((tag, index) => (
+                <span key={index} className="tag">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </AnimationWrapper>
   );
 };
 
