@@ -122,18 +122,32 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
 };
 
 const verifyJWT = (req, res, next) => {
-  const token = req.cookies.accessToken;
+  // Try cookie first, then fallback to Authorization header for mobile
+  let token = req.cookies.accessToken;
+
+  // Mobile fallback: check Authorization header
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
 
   // Debug logging for mobile issues
   console.log('JWT Verification:', {
     hasToken: !!token,
+    tokenSource: req.cookies.accessToken ? 'cookie' : 'header',
     cookies: Object.keys(req.cookies),
+    hasAuthHeader: !!req.headers.authorization,
     userAgent: req.headers['user-agent'],
     origin: req.headers.origin
   });
 
   if (!token) {
-    console.log('No access token found in cookies:', req.cookies);
+    console.log('No access token found in cookies or headers:', {
+      cookies: req.cookies,
+      authHeader: req.headers.authorization
+    });
     return res.status(401).json({ error: "Access token is required" });
   }
 
@@ -238,7 +252,13 @@ server.post("/signup", async (req, res) => {
       .then((user) => {
         const { accessToken, refreshToken } = generateTokens(user);
         setTokenCookies(res, accessToken, refreshToken);
-        return res.status(200).json(formatDataToSend(user));
+
+        // Also send tokens in response body for mobile fallback
+        const userData = formatDataToSend(user);
+        userData.accessToken = accessToken;
+        userData.refreshToken = refreshToken;
+
+        return res.status(200).json(userData);
       })
       .catch((err) => {
         if (err.code === 11000) {
@@ -272,7 +292,13 @@ server.post("/signin", async (req, res) => {
 
         const { accessToken, refreshToken } = generateTokens(user);
         setTokenCookies(res, accessToken, refreshToken);
-        return res.status(200).json(formatDataToSend(user));
+
+        // Also send tokens in response body for mobile fallback
+        const userData = formatDataToSend(user);
+        userData.accessToken = accessToken;
+        userData.refreshToken = refreshToken;
+
+        return res.status(200).json(userData);
       });
     })
     .catch((err) => {
@@ -281,9 +307,19 @@ server.post("/signin", async (req, res) => {
 });
 
 server.post("/refresh", (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  // Try cookie first, then fallback to Authorization header for mobile
+  let refreshToken = req.cookies.refreshToken;
+
+  // Mobile fallback: check Authorization header
+  if (!refreshToken && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      refreshToken = authHeader.substring(7);
+    }
+  }
 
   if (!refreshToken) {
+    console.log('No refresh token found in cookies or headers');
     return res.status(401).json({ error: "Refresh token is required" });
   }
 
@@ -305,7 +341,12 @@ server.post("/refresh", (req, res) => {
           generateTokens(user);
         setTokenCookies(res, accessToken, newRefreshToken);
 
-        res.status(200).json(formatDataToSend(user));
+        // Also send tokens in response body for mobile fallback
+        const userData = formatDataToSend(user);
+        userData.accessToken = accessToken;
+        userData.refreshToken = newRefreshToken;
+
+        res.status(200).json(userData);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
