@@ -20,6 +20,24 @@ const PORT = process.env.PORT || 3000;
 const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
 
+// In-memory cache for view tracking (prevents spam)
+const viewCache = new Map();
+const VIEW_COOLDOWN = 30 * 60 * 1000; // 30 minutes cooldown per IP per blog
+
+// Helper function to check if view should be counted
+const shouldCountView = (blogId, ip) => {
+  const key = `${blogId}-${ip}`;
+  const lastView = viewCache.get(key);
+  const now = Date.now();
+
+  if (lastView && (now - lastView) < VIEW_COOLDOWN) {
+    return false;
+  }
+
+  viewCache.set(key, now);
+  return true;
+};
+
 server.use(express.json());
 server.use(cookieParser());
 server.use(
@@ -735,6 +753,21 @@ server.get("/get-blog/:blog_id", async (req, res) => {
       }
     } else if (blog.draft && !userId) {
       return res.status(404).json({ error: "Blog not found" });
+    }
+
+    // Increment view count for published blogs (not for drafts or author viewing their own blog)
+    if (!blog.draft && (!userId || blog.author?._id?.toString() !== userId)) {
+      const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress ||
+                      (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                      req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+
+      if (shouldCountView(blog.blog_id, clientIP)) {
+        await Blog.findByIdAndUpdate(blog._id, {
+          $inc: { "activity.total_reads": 1 }
+        });
+        // Update the blog object to reflect the new count
+        blog.activity.total_reads = (blog.activity.total_reads || 0) + 1;
+      }
     }
 
     res.status(200).json({ blog });

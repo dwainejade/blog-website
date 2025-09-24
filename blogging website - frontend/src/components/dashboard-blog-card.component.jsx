@@ -75,13 +75,13 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
 
           {/* Status Badge */}
           <div className="flex items-center justify-between sm:justify-end gap-2 flex-none">
-            <span
+            {/* <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
                 draft ? "bg-yellow/20 text-yellow" : "bg-green/20 text-green"
               }`}
             >
               {draft ? "Draft" : "Published"}
-            </span>
+            </span> */}
 
             {/* Actions Dropdown */}
             <div className="relative">

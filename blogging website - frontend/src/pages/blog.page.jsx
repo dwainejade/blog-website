@@ -11,7 +11,6 @@ import {
 import PageAnimation from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
 import EditorNav from "../components/editor-nav.component";
-import Comments from "../components/comments.component";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
@@ -85,7 +84,7 @@ const BlogPage = () => {
     tags,
     publishedAt,
     author: { personal_info: { fullname, username, profile_img } = {} } = {},
-    activity: { total_likes, total_comments } = {},
+    activity: { total_likes, total_comments, total_reads } = {},
   } = blog;
 
   const readingTime = calculateReadingTime(content);
@@ -148,6 +147,12 @@ const BlogPage = () => {
 
       <div className="flex gap-6 mt-12">
         <div className="flex gap-3 items-center">
+          <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-green/20 hover:text-green">
+            <i className="fi fi-rr-eye"></i>
+            {total_reads || 0}
+          </button>
+        </div>
+        <div className="flex gap-3 items-center">
           <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-red/20 hover:text-red">
             <i className="fi fi-rr-heart"></i>
             {total_likes || 0}
@@ -176,7 +181,6 @@ const BlogPage = () => {
         </div>
       )}
 
-      <Comments blog={blog} />
     </div>
   );
 };
