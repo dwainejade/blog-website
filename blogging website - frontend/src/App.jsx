@@ -16,9 +16,11 @@ const App = () => {
   const { isAuthenticated, isInitialized, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // Always check auth on app start to verify persisted state
-    checkAuth();
-  }, [checkAuth]);
+    // Only check auth if we're not already initialized to prevent mobile logout issues
+    if (!isInitialized) {
+      checkAuth();
+    }
+  }, [checkAuth, isInitialized]);
 
   return (
     <>
