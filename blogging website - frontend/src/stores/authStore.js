@@ -100,7 +100,10 @@ const useAuthStore = create(
     try {
       const { data } = await axios.get(
         `${getServerDomain()}/verify`,
-        { _skipInterceptor: true }
+        {
+          _skipInterceptor: true,
+          withCredentials: true
+        }
       );
       set({
         user: data,
@@ -116,7 +119,10 @@ const useAuthStore = create(
           const { data } = await axios.post(
             `${getServerDomain()}/refresh`,
             {},
-            { _skipInterceptor: true }
+            {
+              _skipInterceptor: true,
+              withCredentials: true
+            }
           );
           set({
             user: data,
@@ -128,6 +134,7 @@ const useAuthStore = create(
           return true;
         } catch (refreshError) {
           // Refresh failed, continue to set unauthenticated state
+          console.warn('Token refresh failed:', refreshError);
         }
       }
       set({
@@ -246,11 +253,28 @@ const useAuthStore = create(
     }),
     {
       name: "auth-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        try {
+          // Check if localStorage is available (mobile browsers sometimes have issues)
+          const test = "test";
+          localStorage.setItem(test, test);
+          localStorage.removeItem(test);
+          return localStorage;
+        } catch (e) {
+          // Fallback to sessionStorage if localStorage fails
+          return sessionStorage;
+        }
+      }),
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Verify auth on rehydration for mobile browsers
+          state.checkAuth();
+        }
+      },
     }
   )
 );

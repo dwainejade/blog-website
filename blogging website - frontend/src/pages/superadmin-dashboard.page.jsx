@@ -31,10 +31,15 @@ const SuperAdminDashboard = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/stats`);
+      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/stats`, {
+        withCredentials: true
+      });
       setStats(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
+      if (error.response?.status === 403) {
+        navigate("/");
+      }
     } finally {
       setLoading(false);
     }
@@ -43,10 +48,15 @@ const SuperAdminDashboard = () => {
   const fetchUsers = async (search = "") => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/users?search=${search}`);
+      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/users?search=${search}`, {
+        withCredentials: true
+      });
       setUsers(data.users);
     } catch (error) {
       console.error("Error fetching users:", error);
+      if (error.response?.status === 403) {
+        navigate("/");
+      }
     } finally {
       setLoading(false);
     }
@@ -55,10 +65,15 @@ const SuperAdminDashboard = () => {
   const fetchBlogs = async (search = "") => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/blogs?search=${search}`);
+      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/blogs?search=${search}`, {
+        withCredentials: true
+      });
       setBlogs(data.blogs);
     } catch (error) {
       console.error("Error fetching blogs:", error);
+      if (error.response?.status === 403) {
+        navigate("/");
+      }
     } finally {
       setLoading(false);
     }
@@ -67,10 +82,15 @@ const SuperAdminDashboard = () => {
   const fetchAdmins = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/admins`);
+      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/superadmin/admins`, {
+        withCredentials: true
+      });
       setAdmins(data.admins);
     } catch (error) {
       console.error("Error fetching admins:", error);
+      if (error.response?.status === 403) {
+        navigate("/");
+      }
     } finally {
       setLoading(false);
     }
@@ -114,13 +134,16 @@ const SuperAdminDashboard = () => {
     setActiveTab(tab);
     switch (tab) {
       case "users":
-        fetchUsers();
+        fetchUsers(userSearch);
         break;
       case "content":
-        fetchBlogs();
+        fetchBlogs(blogSearch);
         break;
       case "admins":
         fetchAdmins();
+        break;
+      case "overview":
+        fetchStats();
         break;
     }
   };
