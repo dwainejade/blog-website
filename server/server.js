@@ -1684,6 +1684,46 @@ server.get("/ping", (req, res) => {
   });
 });
 
+// Get user profile by username
+server.get("/user/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const user = await User.findOne({ "personal_info.username": username })
+      .select("personal_info.fullname personal_info.username personal_info.profile_img personal_info.bio social_links account_info joinedAt")
+      .populate({
+        path: "blogs",
+        match: { draft: false },
+        select: "blog_id title banner description activity tags publishedAt",
+        options: {
+          sort: { publishedAt: -1 },
+          limit: 6
+        }
+      });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Format the response
+    const userProfile = {
+      personal_info: user.personal_info,
+      social_links: user.social_links || {},
+      account_info: {
+        total_posts: user.account_info?.total_posts || 0,
+        total_reads: user.account_info?.total_reads || 0
+      },
+      joinedAt: user.joinedAt,
+      blogs: user.blogs || []
+    };
+
+    res.status(200).json({ user: userProfile });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ error: "Failed to fetch user profile" });
+  }
+});
+
 // Debug endpoint for mobile authentication issues
 server.get("/debug/auth", verifyJWT, async (req, res) => {
   try {

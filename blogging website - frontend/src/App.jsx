@@ -33,6 +33,7 @@ const App = () => {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="superadmin" element={<SuperAdminDashboard />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="user/:username" element={<ProfilePage />} />
           <Route path="settings/change-password" element={<ChangePassword />} />
           <Route path="settings/change-email" element={<ChangeEmail />} />
           <Route path="signin" element={<UserAuthForm type="signin" />} />

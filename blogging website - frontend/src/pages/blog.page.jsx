@@ -14,8 +14,7 @@ import EditorNav from "../components/editor-nav.component";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
-  // const navigate = useNavigate();
-  // const { user, isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -118,10 +117,16 @@ const BlogPage = () => {
             <img
               src={profile_img}
               alt={fullname}
-              className="w-12 h-12 rounded-full"
+              className="w-12 h-12 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate(`/user/${username}`)}
             />
 
-            <p className="capitalize text-xl">{fullname}</p>
+            <p
+              className="capitalize text-xl cursor-pointer hover:text-purple transition-colors"
+              onClick={() => navigate(`/user/${username}`)}
+            >
+              {fullname}
+            </p>
           </div>
 
           <div className="flex items-center gap-4 max-sm:mt-6 max-sm:ml-12 max-sm:pl-5">
@@ -145,27 +150,6 @@ const BlogPage = () => {
         <BlogContent content={content} />
       </div>
 
-      <div className="flex gap-6 mt-12">
-        <div className="flex gap-3 items-center">
-          <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-green/20 hover:text-green">
-            <i className="fi fi-rr-eye"></i>
-            {total_reads || 0}
-          </button>
-        </div>
-        <div className="flex gap-3 items-center">
-          <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-red/20 hover:text-red">
-            <i className="fi fi-rr-heart"></i>
-            {total_likes || 0}
-          </button>
-        </div>
-        <div className="flex gap-3 items-center">
-          <button className="flex items-center gap-3 text-xl border-none bg-grey/30 p-3 px-6 rounded-full text-dark-grey hover:bg-twitter/20 hover:text-twitter">
-            <i className="fi fi-rr-comment-dots"></i>
-            {total_comments || 0}
-          </button>
-        </div>
-      </div>
-
       {tags && tags.length > 0 && (
         <div className="mt-12">
           <p className="text-2xl mt-14 mb-10 font-medium text-dark-grey">
@@ -180,7 +164,6 @@ const BlogPage = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

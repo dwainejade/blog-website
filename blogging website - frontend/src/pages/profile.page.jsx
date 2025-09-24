@@ -1,14 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import axios from "axios";
 import AnimationWrapper from "../common/page-animation";
 import InputBox from "../components/input.component";
 import { Toaster, toast } from "react-hot-toast";
 import useAuthStore from "../stores/authStore";
 import { uploadImageToCloudinary } from "../utils/cloudinary";
+import { formatDate } from "../common/date";
+import BlogCard from "../components/blog-card.component";
 
 const ProfilePage = () => {
+  const { username: urlUsername } = useParams();
   const { user, updateProfile, updateProfileImage, isLoading } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [viewingUser, setViewingUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Determine if we're viewing someone else's profile or our own
+  const isOwnProfile = !urlUsername;
   const [profileData, setProfileData] = useState({
     fullname: "",
     username: "",
@@ -27,8 +37,30 @@ const ProfilePage = () => {
   const bioRef = useRef();
   const fileInputRef = useRef();
 
+  // Fetch public user profile if viewing someone else's profile
   useEffect(() => {
-    if (user) {
+    if (urlUsername) {
+      const fetchUserProfile = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(
+            `${import.meta.env.VITE_SERVER_DOMAIN}/user/${urlUsername}`
+          );
+          setViewingUser(response.data.user);
+        } catch (err) {
+          setError(err.response?.data?.error || "Failed to fetch user profile");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchUserProfile();
+    }
+  }, [urlUsername]);
+
+  // Set profile data for own profile
+  useEffect(() => {
+    if (isOwnProfile && user) {
       setProfileData({
         fullname: user.fullname || "",
         username: user.username || "",
@@ -44,7 +76,7 @@ const ProfilePage = () => {
       });
       setProfileImg(user.profile_img || "");
     }
-  }, [user]);
+  }, [user, isOwnProfile]);
 
   const handleImageSelect = () => {
     if (!isEditing) return;
@@ -153,8 +185,8 @@ const ProfilePage = () => {
   const bioMaxLength = 200;
   const bioLength = profileData.bio.length;
 
-  // Show loading if user data is not yet available
-  if (!user) {
+  // Handle loading states
+  if (loading || (!isOwnProfile && !viewingUser) || (isOwnProfile && !user)) {
     return (
       <AnimationWrapper>
         <div className="max-w-4xl mx-auto py-10 text-center">
@@ -165,89 +197,105 @@ const ProfilePage = () => {
     );
   }
 
+  // Handle error state
+  if (error) {
+    return (
+      <AnimationWrapper>
+        <div className="max-w-4xl mx-auto py-10 text-center">
+          <h1 className="text-4xl font-gelasio leading-7 text-dark-grey mb-4">
+            User Not Found
+          </h1>
+          <p className="text-dark-grey text-xl leading-7">{error}</p>
+        </div>
+      </AnimationWrapper>
+    );
+  }
+
+  // Determine which user data to use
+  const displayUser = isOwnProfile ? user : viewingUser;
+  const displayProfileImg = isOwnProfile ? profileImg : displayUser?.personal_info?.profile_img;
+
   return (
     <AnimationWrapper>
       <Toaster />
       <div className="max-w-4xl mx-auto py-10 px-4">
         {/* Header with Edit Toggle */}
         <div className="flex justify-between items-center mb-8">
-          {/* <h1 className="text-3xl font-gelasio">My Profile</h1> */}
-          <div className="flex gap-3">
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn-dark px-6 py-2 rounded-md flex items-center gap-2"
-              >
-                <i className="fi fi-rr-edit text-sm"></i>
-                Edit Profile
-              </button>
-            ) : (
-              <div className="flex gap-3">
+          <h1 className="text-3xl font-gelasio">
+            {isOwnProfile ? "My Profile" : `${displayUser?.personal_info?.fullname || displayUser?.personal_info?.username || "User"}'s Profile`}
+          </h1>
+          {isOwnProfile && (
+            <div className="flex gap-3">
+              {!isEditing ? (
                 <button
-                  onClick={handleSave}
-                  disabled={isLoading || uploading}
-                  className="btn-dark px-6 py-2 rounded-md disabled:opacity-50"
+                  onClick={() => setIsEditing(true)}
+                  className="btn-dark px-6 py-2 rounded-md flex items-center gap-2"
                 >
-                  {isLoading ? "Saving..." : "Save Changes"}
+                  <i className="fi fi-rr-edit text-sm"></i>
+                  Edit Profile
                 </button>
-                <button
-                  onClick={handleCancel}
-                  className="btn-light px-6 py-2 rounded-md"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSave}
+                    disabled={isLoading || uploading}
+                    className="btn-dark px-6 py-2 rounded-md disabled:opacity-50"
+                  >
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="btn-light px-6 py-2 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-10">
-          {/* Left Column - Profile Image & Basic Info */}
-          <div>
-            {/* Profile Image Section */}
-            <div className="flex flex-col items-center mb-8">
-              <div className="relative group">
-                <img
-                  src={profileImg}
-                  alt="Profile"
-                  className="w-40 h-40 rounded-full object-cover border-4 border-grey/20"
-                />
-                {isEditing && (
-                  <div
-                    className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    onClick={handleImageSelect}
-                  >
-                    <i className="fi fi-rr-camera text-white text-xl"></i>
-                  </div>
-                )}
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                  </div>
-                )}
-              </div>
-              {isEditing && (
-                <p className="text-sm text-dark-grey mt-2">
-                  Click to change profile picture
-                </p>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
+        {/* Single Column Layout */}
+        <div className="max-w-2xl mx-auto">
+          {/* Profile Image Section */}
+          <div className="flex flex-col items-center mb-12">
+            <div className="relative group">
+              <img
+                src={displayProfileImg}
+                alt="Profile"
+                className="w-40 h-40 rounded-full object-cover border-4 border-grey/20"
               />
+              {isOwnProfile && isEditing && (
+                <div
+                  className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  onClick={handleImageSelect}
+                >
+                  <i className="fi fi-rr-camera text-white text-xl"></i>
+                </div>
+              )}
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
             </div>
+            {isOwnProfile && isEditing && (
+              <p className="text-sm text-dark-grey mt-2">
+                Click to change profile picture
+              </p>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
 
-            {/* Basic Info */}
-            <div className="space-y-6">
-              {/* Full Name */}
-              <div>
-                <label className="text-sm font-medium text-dark-grey">
-                  Full Name
-                </label>
-                {isEditing ? (
+            {/* Name and Username - Centered */}
+            <div className="text-center mt-6">
+              <div className="mb-4">
+                {isOwnProfile && isEditing ? (
                   <InputBox
                     name="fullname"
                     type="text"
@@ -257,18 +305,17 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                   />
                 ) : (
-                  <p className="text-lg font-medium mt-1">
-                    {profileData.fullname || "Not provided"}
-                  </p>
+                  <h2 className="text-3xl font-bold text-black">
+                    {isOwnProfile
+                      ? (profileData.fullname || "Not provided")
+                      : (displayUser?.personal_info?.fullname || "Not provided")
+                    }
+                  </h2>
                 )}
               </div>
 
-              {/* Username */}
-              <div>
-                <label className="text-sm font-medium text-dark-grey">
-                  Username
-                </label>
-                {isEditing ? (
+              <div className="mb-6">
+                {isOwnProfile && isEditing ? (
                   <InputBox
                     name="username"
                     type="text"
@@ -278,18 +325,18 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                   />
                 ) : (
-                  <p className="text-lg font-medium mt-1">
-                    @{profileData.username || "Not set"}
+                  <p className="text-xl text-dark-grey">
+                    @{isOwnProfile
+                      ? (profileData.username || "Not set")
+                      : (displayUser?.personal_info?.username || "Not set")
+                    }
                   </p>
                 )}
               </div>
 
               {/* Bio */}
-              <div>
-                <label className="text-sm font-medium text-dark-grey">
-                  Bio
-                </label>
-                {isEditing ? (
+              <div className="max-w-lg mx-auto">
+                {isOwnProfile && isEditing ? (
                   <div className="relative w-full mb-4">
                     <textarea
                       ref={bioRef}
@@ -297,7 +344,7 @@ const ProfilePage = () => {
                       placeholder="Tell us about yourself (Max 200 characters)"
                       value={profileData.bio}
                       onChange={handleInputChange}
-                      className="input-box h-32 resize-none leading-7 placeholder:text-dark-grey"
+                      className="input-box h-32 resize-none leading-7 placeholder:text-dark-grey text-center"
                       maxLength={bioMaxLength}
                     />
                     <p className="text-xs text-dark-grey text-right mt-1">
@@ -305,76 +352,119 @@ const ProfilePage = () => {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-base mt-1 leading-7">
-                    {profileData.bio || "No bio provided yet."}
+                  <p className="text-lg leading-7 text-dark-grey">
+                    {isOwnProfile
+                      ? (profileData.bio || "No bio provided yet.")
+                      : (displayUser?.personal_info?.bio || "No bio provided.")
+                    }
                   </p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Social Links & Account Settings */}
-          <div>
-            {/* Social Links */}
-            <div className="mb-8">
-              <h3 className="text-xl font-medium mb-6">Social Links</h3>
-              <div className="space-y-4">
-                {Object.entries(profileData.social_links).map(
-                  ([platform, url]) => (
-                    <div key={platform}>
-                      <label className="text-sm font-medium text-dark-grey capitalize">
-                        {platform}
-                      </label>
-                      {isEditing ? (
+          {/* Social Links */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-medium mb-6 text-center">Social Links</h3>
+            <div className="flex flex-wrap justify-center gap-4">
+              {Object.entries(isOwnProfile ? profileData.social_links : (displayUser?.social_links || {})).map(
+                ([platform, url]) => {
+                  if (isOwnProfile && isEditing) {
+                    return (
+                      <div key={platform} className="w-full max-w-sm">
+                        <label className="text-sm font-medium text-dark-grey capitalize block mb-2">
+                          {platform}
+                        </label>
                         <InputBox
                           name={`social_${platform}`}
                           type="url"
-                          placeholder={`${
-                            platform.charAt(0).toUpperCase() + platform.slice(1)
-                          } URL`}
-                          icon={`fi-brands-${platform}`}
+                          placeholder={`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`}
+                          icon={platform === 'website' ? 'fi-rr-globe' : `fi-brands-${platform}`}
                           value={url}
                           onChange={handleInputChange}
                         />
-                      ) : (
-                        <div className="mt-1">
-                          {url ? (
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-purple hover:underline flex items-center gap-2"
-                            >
-                              <i className={`fi fi-brands-${platform}`}></i>
-                              {url}
-                            </a>
-                          ) : (
-                            <p className="text-dark-grey">Not provided</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
+                      </div>
+                    );
+                  }
+
+                  if (!url) return null;
+
+                  // Ensure URL has protocol for external links
+                  const externalUrl = url.startsWith('http://') || url.startsWith('https://')
+                    ? url
+                    : `https://${url}`;
+
+                  return (
+                    <a
+                      key={platform}
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center w-12 h-12 bg-grey/20 hover:bg-purple/20 rounded-full transition-colors group"
+                      title={`${platform.charAt(0).toUpperCase() + platform.slice(1)}`}
+                    >
+                      <i className={`fi ${platform === 'website' ? 'fi-rr-globe' : `fi-brands-${platform}`} text-xl text-dark-grey group-hover:text-purple transition-colors`}></i>
+                    </a>
+                  );
+                }
+              )}
+            </div>
+          </div>
+
+          {/* Stats for Public Profile */}
+          {!isOwnProfile && (
+            <div className="mb-12">
+              <h3 className="text-2xl font-medium mb-6 text-center">Stats</h3>
+              <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto">
+                <div className="bg-grey/10 p-6 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-dark-grey">
+                    {displayUser?.account_info?.total_posts || 0}
+                  </p>
+                  <p className="text-sm text-dark-grey mt-2">Posts</p>
+                </div>
+                <div className="bg-grey/10 p-6 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-dark-grey">
+                    {formatDate(displayUser?.joinedAt).split(' ')[2] || "2024"}
+                  </p>
+                  <p className="text-sm text-dark-grey mt-2">Joined</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recent Posts for Public Profile */}
+          {!isOwnProfile && (
+            <div className="mb-12">
+              <h3 className="text-2xl font-medium mb-6 text-center">Recent Posts</h3>
+              <div className="space-y-4">
+                {displayUser?.blogs && displayUser.blogs.length > 0 ? (
+                  displayUser.blogs.map((blog, index) => (
+                    <BlogCard key={index} blog={blog} author={displayUser.personal_info} />
+                  ))
+                ) : (
+                  <p className="text-dark-grey text-center">No posts yet.</p>
                 )}
               </div>
             </div>
+          )}
 
-            {/* Account Settings */}
-            <div className="border-t pt-8">
-              <h3 className="text-xl font-medium mb-6">Account Settings</h3>
-              <div className="space-y-4">
+          {/* Account Settings for Own Profile */}
+          {isOwnProfile && (
+            <div className="mb-12">
+              <h3 className="text-2xl font-medium mb-6 text-center">Account Settings</h3>
+              <div className="space-y-4 max-w-md mx-auto">
                 <Link
                   to="/settings/change-password"
                   className="flex items-center gap-3 p-4 bg-grey/10 rounded-lg hover:bg-grey/20 transition-colors"
                 >
                   <i className="fi fi-rr-lock text-lg text-purple"></i>
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-medium">Change Password</h4>
                     <p className="text-sm text-dark-grey">
                       Update your account password
                     </p>
                   </div>
-                  <i className="fi fi-rr-angle-right ml-auto text-dark-grey"></i>
+                  <i className="fi fi-rr-angle-right text-dark-grey"></i>
                 </Link>
 
                 <Link
@@ -382,17 +472,17 @@ const ProfilePage = () => {
                   className="flex items-center gap-3 p-4 bg-grey/10 rounded-lg hover:bg-grey/20 transition-colors"
                 >
                   <i className="fi fi-rr-envelope text-lg text-purple"></i>
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-medium">Change Email</h4>
                     <p className="text-sm text-dark-grey">
                       Update your email address
                     </p>
                   </div>
-                  <i className="fi fi-rr-angle-right ml-auto text-dark-grey"></i>
+                  <i className="fi fi-rr-angle-right text-dark-grey"></i>
                 </Link>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </AnimationWrapper>

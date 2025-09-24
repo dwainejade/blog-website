@@ -1,17 +1,22 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { formatDate } from "../common/date";
 
 const BlogCard = ({ blog }) => {
+  const navigate = useNavigate();
   const {
     blog_id,
     title,
-    des: description,
+    description,
     banner,
-    tags,
     publishedAt,
     author: { personal_info: { fullname, username, profile_img } = {} } = {},
-    activity: { total_likes, total_comments } = {},
   } = blog;
+
+  const handleAuthorClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/user/${username}`);
+  };
 
   return (
     <Link
@@ -27,9 +32,15 @@ const BlogCard = ({ blog }) => {
           <img
             src={profile_img}
             alt={fullname}
-            className="w-8 h-8 rounded-full"
+            className="w-8 h-8 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleAuthorClick}
           />
-          <p className="line-clamp-1 text-sm text-dark-grey">{fullname}</p>
+          <p
+            className="line-clamp-1 text-sm text-dark-grey cursor-pointer hover:text-purple transition-colors"
+            onClick={handleAuthorClick}
+          >
+            {fullname}
+          </p>
           <p className="min-w-fit text-sm text-dark-grey">
             {formatDate(publishedAt)}
           </p>
@@ -40,18 +51,6 @@ const BlogCard = ({ blog }) => {
         <p className="text-lg font-gelasio leading-7 line-clamp-3 mb-4 text-dark-grey">
           {description}
         </p>
-
-        <div className="flex gap-4 items-center">
-          <span className="btn-light py-1 px-4 text-sm">{tags[0]}</span>
-          <span className="flex items-center gap-2 text-dark-grey text-sm">
-            <i className="fi fi-rr-heart"></i>
-            {total_likes}
-          </span>
-          <span className="flex items-center gap-2 text-dark-grey text-sm">
-            <i className="fi fi-rr-comment-dots"></i>
-            {total_comments}
-          </span>
-        </div>
       </div>
     </Link>
   );
