@@ -7,10 +7,17 @@ axios.defaults.withCredentials = true;
 axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// Add request interceptor to ensure credentials are always sent
+// Add request interceptor to ensure credentials are always sent + mobile fallback
 axios.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
+
+    // Mobile fallback: add Authorization header if token exists in localStorage
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     return config;
   },
   (error) => {
@@ -40,6 +47,15 @@ const useAuthStore = create(
         `${getServerDomain()}/signin`,
         credentials
       );
+
+      // Mobile fallback: also store tokens in localStorage
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+      }
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+
       set({
         user: data,
         isAuthenticated: true,
@@ -63,6 +79,15 @@ const useAuthStore = create(
         `${getServerDomain()}/signup`,
         userData
       );
+
+      // Mobile fallback: also store tokens in localStorage
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+      }
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+
       set({
         user: data,
         isAuthenticated: true,
@@ -83,6 +108,11 @@ const useAuthStore = create(
     set({ isLoading: true });
     try {
       await axios.post(`${getServerDomain()}/logout`);
+
+      // Clear localStorage tokens
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+
       set({
         user: null,
         isAuthenticated: false,
@@ -91,6 +121,10 @@ const useAuthStore = create(
       });
       window.location.href = "/signin";
     } catch (error) {
+      // Clear tokens even if logout request fails
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+
       set({
         user: null,
         isAuthenticated: false,
@@ -141,14 +175,28 @@ const useAuthStore = create(
 
       if (error.response?.status === 401) {
         try {
+          // For mobile: try using stored refresh token in header if cookies don't work
+          const refreshToken = localStorage.getItem('refreshToken');
+          const headers = refreshToken ? { Authorization: `Bearer ${refreshToken}` } : {};
+
           const { data } = await axios.post(
             `${getServerDomain()}/refresh`,
             {},
             {
               _skipInterceptor: true,
-              withCredentials: true
+              withCredentials: true,
+              headers
             }
           );
+
+          // Store new tokens for mobile
+          if (data.accessToken) {
+            localStorage.setItem('accessToken', data.accessToken);
+          }
+          if (data.refreshToken) {
+            localStorage.setItem('refreshToken', data.refreshToken);
+          }
+
           set({
             user: data,
             isAuthenticated: true,
@@ -160,6 +208,9 @@ const useAuthStore = create(
         } catch (refreshError) {
           // Refresh failed, continue to set unauthenticated state
           console.warn('Token refresh failed:', refreshError);
+          // Clear stored tokens on refresh failure
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
         }
       }
 
