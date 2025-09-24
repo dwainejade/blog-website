@@ -17,6 +17,7 @@ const SuperAdminDashboard = () => {
   const [blogSearch, setBlogSearch] = useState("");
   const [debugInfo, setDebugInfo] = useState(null);
   const [debugLoading, setDebugLoading] = useState(false);
+  const [pingTest, setPingTest] = useState(null);
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || user?.role !== 'superadmin')) {
@@ -132,20 +133,75 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const testPing = async () => {
+    try {
+      const start = Date.now();
+      const response = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/ping`, {
+        timeout: 5000,
+        headers: { 'Accept': 'application/json' }
+      });
+      const duration = Date.now() - start;
+      setPingTest({
+        success: true,
+        duration,
+        status: response.status,
+        data: response.data
+      });
+    } catch (error) {
+      setPingTest({
+        success: false,
+        error: error.message,
+        code: error.code,
+        status: error.response?.status
+      });
+    }
+  };
+
   const fetchDebugInfo = async () => {
     try {
       setDebugLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/debug/auth`, {
-        withCredentials: true
+
+      // Add timeout for mobile browsers
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
+      );
+
+      const requestPromise = axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/debug/auth`, {
+        withCredentials: true,
+        timeout: 8000, // 8 second axios timeout
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
+
+      const { data } = await Promise.race([requestPromise, timeoutPromise]);
       setDebugInfo(data);
     } catch (error) {
       console.error("Debug request failed:", error);
-      setDebugInfo({
-        error: error.response?.data?.error || error.message,
-        status: error.response?.status,
-        authenticated: false
-      });
+
+      let errorInfo = {
+        authenticated: false,
+        error: error.message,
+        requestDetails: {
+          url: `${import.meta.env.VITE_SERVER_DOMAIN}/debug/auth`,
+          timeout: error.code === 'ECONNABORTED' || error.message.includes('timeout'),
+          networkError: !error.response,
+          status: error.response?.status,
+          responseData: error.response?.data
+        }
+      };
+
+      // Add more specific mobile debugging info
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        errorInfo.mobileIssue = 'Network connectivity or CORS problem';
+      } else if (error.response?.status === 0) {
+        errorInfo.mobileIssue = 'Request blocked - possible CORS or cookie issue';
+      } else if (error.code === 'ECONNABORTED') {
+        errorInfo.mobileIssue = 'Request timeout - server not responding';
+      }
+
+      setDebugInfo(errorInfo);
     } finally {
       setDebugLoading(false);
     }
@@ -485,14 +541,44 @@ const SuperAdminDashboard = () => {
               <div className="bg-white border border-grey rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="font-medium text-xl">Debug Authentication</h2>
-                  <button
-                    onClick={fetchDebugInfo}
-                    className="btn-dark"
-                    disabled={debugLoading}
-                  >
-                    {debugLoading ? "Testing..." : "Test Auth"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={testPing}
+                      className="btn-light"
+                    >
+                      Test Connection
+                    </button>
+                    <button
+                      onClick={fetchDebugInfo}
+                      className="btn-dark"
+                      disabled={debugLoading}
+                    >
+                      {debugLoading ? "Testing..." : "Test Auth"}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Ping Test Results */}
+                {pingTest && (
+                  <div className={`p-4 rounded-lg mb-4 ${
+                    pingTest.success ? 'bg-green/10 border border-green/20' : 'bg-red/10 border border-red/20'
+                  }`}>
+                    <h4 className={`font-medium ${pingTest.success ? 'text-green' : 'text-red'}`}>
+                      Server Connection: {pingTest.success ? 'SUCCESS' : 'FAILED'}
+                    </h4>
+                    {pingTest.success ? (
+                      <div className="text-sm mt-1">
+                        <p>Response time: {pingTest.duration}ms</p>
+                        <p>Server status: {pingTest.data?.status}</p>
+                      </div>
+                    ) : (
+                      <div className="text-sm mt-1">
+                        <p>Error: {pingTest.error}</p>
+                        {pingTest.status && <p>Status: {pingTest.status}</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {debugLoading ? (
                   <div className="text-center py-8">
@@ -511,8 +597,26 @@ const SuperAdminDashboard = () => {
                     {debugInfo.error && (
                       <div className="p-4 bg-red/10 border border-red/20 rounded-lg">
                         <h4 className="font-medium text-red mb-2">Error Details:</h4>
-                        <p className="text-sm">{debugInfo.error}</p>
-                        {debugInfo.status && <p className="text-sm mt-1">Status: {debugInfo.status}</p>}
+                        <p className="text-sm mb-2">{debugInfo.error}</p>
+
+                        {debugInfo.mobileIssue && (
+                          <div className="mt-2 p-2 bg-yellow/10 border border-yellow/20 rounded">
+                            <p className="text-sm text-yellow-600">
+                              <strong>Mobile Issue:</strong> {debugInfo.mobileIssue}
+                            </p>
+                          </div>
+                        )}
+
+                        {debugInfo.requestDetails && (
+                          <div className="mt-3 text-xs space-y-1">
+                            <p><strong>URL:</strong> {debugInfo.requestDetails.url}</p>
+                            <p><strong>Network Error:</strong> {debugInfo.requestDetails.networkError ? 'Yes' : 'No'}</p>
+                            <p><strong>Timeout:</strong> {debugInfo.requestDetails.timeout ? 'Yes' : 'No'}</p>
+                            {debugInfo.requestDetails.status && (
+                              <p><strong>Status Code:</strong> {debugInfo.requestDetails.status}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
