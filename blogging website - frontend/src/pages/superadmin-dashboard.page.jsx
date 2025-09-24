@@ -15,6 +15,8 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [blogSearch, setBlogSearch] = useState("");
+  const [debugInfo, setDebugInfo] = useState(null);
+  const [debugLoading, setDebugLoading] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || user?.role !== 'superadmin')) {
@@ -130,6 +132,25 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const fetchDebugInfo = async () => {
+    try {
+      setDebugLoading(true);
+      const { data } = await axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/debug/auth`, {
+        withCredentials: true
+      });
+      setDebugInfo(data);
+    } catch (error) {
+      console.error("Debug request failed:", error);
+      setDebugInfo({
+        error: error.response?.data?.error || error.message,
+        status: error.response?.status,
+        authenticated: false
+      });
+    } finally {
+      setDebugLoading(false);
+    }
+  };
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     switch (tab) {
@@ -144,6 +165,9 @@ const SuperAdminDashboard = () => {
         break;
       case "overview":
         fetchStats();
+        break;
+      case "debug":
+        fetchDebugInfo();
         break;
     }
   };
@@ -173,12 +197,13 @@ const SuperAdminDashboard = () => {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex border-b border-grey mb-8">
+          <div className="flex border-b border-grey mb-8 overflow-x-auto">
             {[
               { key: "overview", label: "System Overview" },
               { key: "users", label: "User Management" },
               { key: "content", label: "Content Moderation" },
-              { key: "admins", label: "Admin Management" }
+              { key: "admins", label: "Admin Management" },
+              { key: "debug", label: "Debug Auth" }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -448,6 +473,93 @@ const SuperAdminDashboard = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "debug" && (
+            <div>
+              {/* Debug Authentication */}
+              <div className="bg-white border border-grey rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-medium text-xl">Debug Authentication</h2>
+                  <button
+                    onClick={fetchDebugInfo}
+                    className="btn-dark"
+                    disabled={debugLoading}
+                  >
+                    {debugLoading ? "Testing..." : "Test Auth"}
+                  </button>
+                </div>
+
+                {debugLoading ? (
+                  <div className="text-center py-8">
+                    <div className="loader"></div>
+                  </div>
+                ) : debugInfo ? (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-lg ${
+                      debugInfo.authenticated ? 'bg-green/10 border border-green/20' : 'bg-red/10 border border-red/20'
+                    }`}>
+                      <h3 className={`font-medium ${debugInfo.authenticated ? 'text-green' : 'text-red'}`}>
+                        Authentication Status: {debugInfo.authenticated ? 'SUCCESS' : 'FAILED'}
+                      </h3>
+                    </div>
+
+                    {debugInfo.error && (
+                      <div className="p-4 bg-red/10 border border-red/20 rounded-lg">
+                        <h4 className="font-medium text-red mb-2">Error Details:</h4>
+                        <p className="text-sm">{debugInfo.error}</p>
+                        {debugInfo.status && <p className="text-sm mt-1">Status: {debugInfo.status}</p>}
+                      </div>
+                    )}
+
+                    {debugInfo.authenticated && (
+                      <>
+                        <div className="p-4 bg-grey/10 border border-grey rounded-lg">
+                          <h4 className="font-medium mb-2">User Information:</h4>
+                          <div className="text-sm space-y-1">
+                            <p><strong>User ID:</strong> {debugInfo.userId}</p>
+                            <p><strong>Role:</strong> {debugInfo.userRole}</p>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-grey/10 border border-grey rounded-lg">
+                          <h4 className="font-medium mb-2">Cookies Present:</h4>
+                          <div className="text-sm">
+                            {debugInfo.cookies && debugInfo.cookies.length > 0 ? (
+                              <ul className="list-disc list-inside space-y-1">
+                                {debugInfo.cookies.map((cookie, index) => (
+                                  <li key={index}>{cookie}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-red">No cookies found</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-grey/10 border border-grey rounded-lg">
+                          <h4 className="font-medium mb-2">Request Headers:</h4>
+                          <div className="text-sm space-y-1">
+                            <p><strong>User Agent:</strong> {debugInfo.headers?.userAgent || 'Not available'}</p>
+                            <p><strong>Origin:</strong> {debugInfo.headers?.origin || 'Not available'}</p>
+                            <p><strong>Referer:</strong> {debugInfo.headers?.referer || 'Not available'}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="text-xs text-dark-grey mt-4">
+                      <p>💡 <strong>Tip:</strong> If authentication fails on mobile, check if cookies are being sent properly.</p>
+                      <p>💡 <strong>Mobile Issue:</strong> If you can't publish blogs, this will show authentication status.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-dark-grey">
+                    <p>Click "Test Auth" to check authentication status and debug mobile issues</p>
                   </div>
                 )}
               </div>
