@@ -31,6 +31,8 @@ server.use(
       const allowedOrigins = [
         "http://localhost:5173",
         "https://cyclesandstages.vercel.app",
+        "https://cyclesandstages.com",
+        "https://www.cyclesandstages.com",
         process.env.FRONTEND_URL,
       ].filter(Boolean);
 
