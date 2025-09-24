@@ -11,6 +11,7 @@ import ProfilePage from "./pages/profile.page";
 import ChangePassword from "./pages/change-password.page";
 import ChangeEmail from "./pages/change-email.page";
 import SuperAdminDashboard from "./pages/superadmin-dashboard.page";
+import NotificationsPage from "./pages/notifications.page";
 import useAuthStore from "./stores/authStore";
 
 const App = () => {
@@ -33,6 +34,7 @@ const App = () => {
           <Route path="blog/:blog_id" element={<BlogPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="dashboard/notifications" element={<NotificationsPage />} />
           <Route path="superadmin" element={<SuperAdminDashboard />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="user/:username" element={<ProfilePage />} />

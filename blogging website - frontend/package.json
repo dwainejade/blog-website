@@ -24,6 +24,7 @@
     "@flaticon/flaticon-uicons": "^2.2.0",
     "axios": "^1.4.0",
     "cloudinary-core": "^2.14.0",
+    "date-fns": "^4.1.0",
     "editorjs-inline-image": "^2.2.2",
     "firebase": "^10.1.0",
     "framer-motion": "^10.13.0",

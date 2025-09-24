@@ -51,7 +51,7 @@ const UserNavigationPanel = ({ show, hide }) => {
           <p>Dashboard</p>
         </Link>
 
-        {user?.role === 'superadmin' && (
+        {user?.role === "superadmin" && (
           <Link
             to="/superadmin"
             className="flex gap-2 link pl-8 py-4"
@@ -62,7 +62,7 @@ const UserNavigationPanel = ({ show, hide }) => {
           </Link>
         )}
 
-        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+        {(user?.role === "admin" || user?.role === "superadmin") && (
           <Link
             to="/editor"
             className="flex gap-2 link pl-8 py-4"
@@ -83,7 +83,7 @@ const UserNavigationPanel = ({ show, hide }) => {
         </Link>
 
         <Link
-          to="/dashboard/blogs"
+          to="/dashboard/notifications"
           className="flex gap-2 link pl-8 py-4 link"
           onClick={handleLinkClick}
         >

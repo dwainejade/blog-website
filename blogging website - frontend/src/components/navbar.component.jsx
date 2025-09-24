@@ -3,12 +3,14 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import logo from "../imgs/logo.png";
 import useAuthStore from "../stores/authStore";
 import UserNavigationPanel from "./user-navigation.component";
+import useNotifications from "../hooks/useNotifications";
 
 const Navbar = () => {
   const [searchBarOpen, setSearchBarOpen] = useState(false);
   const [userPanelOpen, setUserPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
@@ -79,9 +81,14 @@ const Navbar = () => {
                   Welcome, {user?.fullname.split(" ")[0]}
                 </p>
 
-                <Link to={`/dashboard/notification`}>
+                <Link to={`/dashboard/notifications`}>
                   <button className="w-12 h-12 rounded-full bg-grey flex items-center justify-center relative hover:bg-black/20">
                     <i className="fi fi-rr-bell"></i>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </button>
                 </Link>
 

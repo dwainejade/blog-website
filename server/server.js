@@ -11,6 +11,7 @@ import cookieParser from "cookie-parser";
 import User from "./Schema/User.js";
 import Blog from "./Schema/Blog.js";
 import Comment from "./Schema/Comment.js";
+import Notification from "./Schema/Notification.js";
 
 // dotenv.config();
 
@@ -1313,6 +1314,29 @@ server.post("/add-comment", verifyJWT, async (req, res) => {
           { _id: replying_to },
           { $push: { children: commentFile._id } }
         );
+
+        // Create notification for reply
+        const originalComment = await Comment.findById(replying_to);
+        if (originalComment) {
+          await createNotification(
+            "reply",
+            blog_id,
+            originalComment.commented_by,
+            user_id,
+            commentFile._id,
+            commentFile._id,
+            replying_to
+          );
+        }
+      } else {
+        // Create notification for new comment
+        await createNotification(
+          "comment",
+          blog_id,
+          blog_author,
+          user_id,
+          commentFile._id
+        );
       }
 
       return res.status(200).json({
@@ -1834,6 +1858,195 @@ server.get("/debug/auth", verifyJWT, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ===== BLOG LIKE/UNLIKE ROUTES =====
+
+// Like/Unlike a blog
+server.post("/like-blog", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { _id: blog_id, isLikedByUser } = req.body;
+
+    const incrementVal = !isLikedByUser ? 1 : -1;
+
+    const blog = await Blog.findOneAndUpdate(
+      { _id: blog_id },
+      { $inc: { "activity.total_likes": incrementVal } },
+      { new: true }
+    ).select("activity.total_likes author");
+
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    // Create notification for like (not unlike)
+    if (!isLikedByUser) {
+      await createNotification(
+        "like",
+        blog_id,
+        blog.author,
+        user_id
+      );
+    }
+
+    return res.status(200).json({
+      liked_by_user: !isLikedByUser,
+      total_likes: blog.activity.total_likes
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== NOTIFICATION ROUTES =====
+
+// Get all notifications for a user
+server.get("/notifications", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    const notifications = await Notification.find({ notification_for: user_id })
+      .populate({
+        path: "user",
+        select: "personal_info.fullname personal_info.username personal_info.profile_img"
+      })
+      .populate({
+        path: "blog",
+        select: "title blog_id"
+      })
+      .populate({
+        path: "comment",
+        select: "comment"
+      })
+      .populate({
+        path: "reply",
+        select: "comment"
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Notification.countDocuments({ notification_for: user_id });
+    const unreadCount = await Notification.countDocuments({
+      notification_for: user_id,
+      seen: false
+    });
+
+    return res.status(200).json({
+      notifications,
+      total,
+      unreadCount,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark notification as seen
+server.patch("/notification/:id/seen", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { id } = req.params;
+
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, notification_for: user_id },
+      { seen: true },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    return res.status(200).json({ message: "Notification marked as seen" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark all notifications as seen
+server.patch("/notifications/seen", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+
+    await Notification.updateMany(
+      { notification_for: user_id, seen: false },
+      { seen: true }
+    );
+
+    return res.status(200).json({ message: "All notifications marked as seen" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a notification
+server.delete("/notification/:id", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { id } = req.params;
+
+    const notification = await Notification.findOneAndDelete({
+      _id: id,
+      notification_for: user_id
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    return res.status(200).json({ message: "Notification deleted successfully" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get unread notification count
+server.get("/notifications/unread-count", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+
+    const unreadCount = await Notification.countDocuments({
+      notification_for: user_id,
+      seen: false
+    });
+
+    return res.status(200).json({ unreadCount });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper function to create notifications (will be used by other routes)
+const createNotification = async (type, blog_id, notification_for, user_id, comment_id = null, reply_id = null, replied_on_comment_id = null) => {
+  try {
+    // Don't create notification if user is notifying themselves
+    if (notification_for.toString() === user_id.toString()) {
+      return;
+    }
+
+    const notificationObj = {
+      type,
+      blog: blog_id,
+      notification_for,
+      user: user_id
+    };
+
+    if (comment_id) notificationObj.comment = comment_id;
+    if (reply_id) notificationObj.reply = reply_id;
+    if (replied_on_comment_id) notificationObj.replied_on_comment = replied_on_comment_id;
+
+    const notification = new Notification(notificationObj);
+    await notification.save();
+  } catch (err) {
+    console.error("Error creating notification:", err);
+  }
+};
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
