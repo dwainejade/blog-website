@@ -10,7 +10,7 @@ const InputBox = ({ name, type, id, value, placeholder, icon, onChange, disabled
     id,
     placeholder,
     disabled,
-    className: "input-box disabled:opacity-50 disabled:cursor-not-allowed"
+    className: "input-box disabled:opacity-50 disabled:cursor-not-allowed text-[16px]"
   };
 
   // If onChange is provided, use controlled input
