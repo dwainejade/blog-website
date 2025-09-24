@@ -43,9 +43,9 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
   };
 
   return (
-    <div className="flex gap-6 border-b border-grey pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0">
+    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 border-b border-grey pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0">
       {/* Blog Banner */}
-      <div className="w-28 h-28 flex-none">
+      <div className="w-full sm:w-28 h-48 sm:h-28 flex-none">
         {banner ? (
           <img
             src={banner}
@@ -61,8 +61,8 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
 
       {/* Blog Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1 min-w-0 mr-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-3 sm:gap-0">
+          <div className="flex-1 min-w-0 sm:mr-4">
             <h3 className="font-medium text-lg text-black line-clamp-2 mb-1">
               {title}
             </h3>
@@ -74,7 +74,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
           </div>
 
           {/* Status Badge */}
-          <div className="flex items-center gap-2 flex-none">
+          <div className="flex items-center justify-between sm:justify-end gap-2 flex-none">
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
                 draft ? "bg-yellow/20 text-yellow" : "bg-green/20 text-green"
@@ -126,7 +126,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
         </div>
 
         {/* Blog Meta */}
-        <div className="flex items-center gap-4 text-sm text-dark-grey mb-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-dark-grey mb-3">
           <span>{getDay(publishedAt)}</span>
           {!draft && activity && (
             <>
@@ -167,11 +167,12 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
       </div>
 
       {/* Click overlay for mobile */}
-      <div
-        className="absolute inset-0 md:hidden"
-        onClick={() => setShowDropdown(false)}
-        style={{ display: showDropdown ? "block" : "none" }}
-      />
+      {showDropdown && (
+        <div
+          className="fixed inset-0 md:hidden z-5"
+          onClick={() => setShowDropdown(false)}
+        />
+      )}
     </div>
   );
 };
