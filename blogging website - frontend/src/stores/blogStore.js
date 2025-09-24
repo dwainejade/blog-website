@@ -86,6 +86,9 @@ const useBlogStore = create((set, get) => ({
         `${getServerDomain()}/user-blogs`,
         {
           withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
       );
 

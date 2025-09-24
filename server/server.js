@@ -24,21 +24,51 @@ server.use(express.json());
 server.use(cookieParser());
 server.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://cyclesandstages.vercel.app",
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "https://cyclesandstages.vercel.app",
+        process.env.FRONTEND_URL,
+      ].filter(Boolean);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log('Blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Cache-Control',
+      'X-File-Name'
+    ],
     exposedHeaders: ['Set-Cookie'],
-    optionsSuccessStatus: 200, // For legacy browser support
+    optionsSuccessStatus: 200,
+    preflightContinue: false,
   })
 );
 
 mongoose.connect(process.env.DB_LOCATION, {
   autoIndex: true,
+});
+
+// Explicit preflight handling for mobile browsers
+server.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
+  res.header('Access-Control-Allow-Credentials', true);
+  res.sendStatus(200);
 });
 
 const generateTokens = (user) => {
@@ -70,11 +100,14 @@ const formatDataToSend = (user) => {
 };
 
 const setTokenCookies = (res, accessToken, refreshToken) => {
+  // Vercel-specific cookie configuration for mobile compatibility
+  const isProduction = process.env.NODE_ENV === "production";
+
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser handle domain
+    secure: isProduction, // Must be true in production for sameSite=none
+    sameSite: isProduction ? "none" : "lax", // Required for cross-origin on Vercel
+    path: "/", // Explicit path for mobile compatibility
   };
 
   res.cookie("accessToken", accessToken, {
@@ -91,12 +124,22 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
 const verifyJWT = (req, res, next) => {
   const token = req.cookies.accessToken;
 
+  // Debug logging for mobile issues
+  console.log('JWT Verification:', {
+    hasToken: !!token,
+    cookies: Object.keys(req.cookies),
+    userAgent: req.headers['user-agent'],
+    origin: req.headers.origin
+  });
+
   if (!token) {
+    console.log('No access token found in cookies:', req.cookies);
     return res.status(401).json({ error: "Access token is required" });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
+      console.log('JWT verification failed:', err.message);
       return res.status(401).json({ error: "Access token is invalid" });
     }
     req.user = decoded.id; // Extract just the user ID
@@ -271,11 +314,13 @@ server.post("/refresh", (req, res) => {
 });
 
 server.post("/logout", (_req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    domain: process.env.NODE_ENV === "production" ? undefined : undefined,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
   };
 
   res.clearCookie("accessToken", cookieOptions);
@@ -442,11 +487,26 @@ server.post(
   verifyAdminOrSuperAdmin,
   async (req, res) => {
     try {
+      console.log('Create blog request:', {
+        userId: req.user,
+        userAgent: req.headers['user-agent'],
+        origin: req.headers.origin,
+        hasBody: !!req.body,
+        bodyKeys: Object.keys(req.body || {})
+      });
+
       // Verify user still exists in database
       const user = await User.findById(req.user);
       if (!user) {
+        console.log('User not found for ID:', req.user);
         return res.status(404).json({ error: "User not found" });
       }
+
+      console.log('User found:', {
+        id: user._id,
+        role: user.role,
+        username: user.personal_info?.username
+      });
 
       let { title, banner, description, content, tags, draft } = req.body;
 
@@ -1529,6 +1589,26 @@ server.get("/ping", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
   });
+});
+
+// Debug endpoint for mobile authentication issues
+server.get("/debug/auth", verifyJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    res.status(200).json({
+      authenticated: true,
+      userId: req.user,
+      userRole: user?.role,
+      cookies: Object.keys(req.cookies),
+      headers: {
+        userAgent: req.headers['user-agent'],
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 server.listen(PORT, () => {
