@@ -428,7 +428,7 @@ server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    let { title, banner, description, content, tags } = req.body;
+    let { title, banner, description, content, tags, category } = req.body;
 
     // Only validate title for drafts
     if (!title || !title.trim()) {
@@ -471,6 +471,7 @@ server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
       description: description || "",
       content: content || { blocks: [] },
       tags: tags || [],
+      category: category || "",
       author: req.user,
       draft: true,
       original_blog_id: req.body.original_blog_id || null,
@@ -511,7 +512,7 @@ server.put(
         return res.status(404).json({ error: "User not found" });
       }
 
-      let { title, banner, description, content, tags } = req.body;
+      let { title, banner, description, content, tags, category } = req.body;
 
       // Only validate title for drafts
       if (!title || !title.trim()) {
@@ -537,6 +538,7 @@ server.put(
           description: description || "",
           content: content || { blocks: [] },
           tags: tags || [],
+          category: category || "",
         },
         { new: true }
       );
@@ -607,6 +609,7 @@ server.post("/create-edit-draft/:blogId", verifyJWT, verifyAdminOrSuperAdmin, as
       description: originalBlog.description,
       content: originalBlog.content,
       tags: originalBlog.tags,
+      category: originalBlog.category || "",
       author: userId,
       draft: true,
       original_blog_id: blogId // Link to original blog
@@ -660,7 +663,7 @@ server.post(
         username: user.personal_info?.username
       });
 
-      let { title, banner, description, content, tags, draft } = req.body;
+      let { title, banner, description, content, tags, category, draft } = req.body;
 
       // Validate required fields
       if (!title || !title.trim()) {
@@ -720,6 +723,7 @@ server.post(
         description: description || "",
         content,
         tags: tags || [],
+        category: category || "",
         author: req.user, // Use verified user ID
         draft: draft || false,
         original_blog_id: req.body.original_blog_id || null,

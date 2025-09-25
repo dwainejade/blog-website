@@ -42,6 +42,12 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
     }
   };
 
+  const handleTagClick = (e, tag) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/search?query=${encodeURIComponent(tag)}&type=blogs`);
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 border-b border-grey pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0">
       {/* Blog Banner */}
@@ -152,7 +158,8 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
             {tags.slice(0, 3).map((tag, index) => (
               <span
                 key={index}
-                className="px-2 py-1 bg-grey/30 text-dark-grey text-xs rounded-full"
+                onClick={(e) => handleTagClick(e, tag)}
+                className="px-2 py-1 bg-grey/30 hover:bg-grey/50 text-dark-grey hover:text-black text-xs rounded-full cursor-pointer transition-colors duration-200"
               >
                 #{tag}
               </span>

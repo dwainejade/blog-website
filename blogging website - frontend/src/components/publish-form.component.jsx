@@ -13,28 +13,18 @@ const PublishForm = () => {
   const updateBlog = useEditorStore((state) => state.updateBlog);
   const saveDraft = useEditorStore((state) => state.saveDraft);
   const publishBlog = useEditorStore((state) => state.publishBlog);
-  const { banner, title, tags, description } = blog;
+  const { banner, title, tags, description, category } = blog;
 
-  const [formData, setFormData] = useState({
-    category: "",
-  });
   const [isPublishing, setIsPublishing] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "category") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    } else {
-      // Update blog state directly for title/description
-      updateBlog({
-        ...blog,
-        [name]: value,
-      });
-    }
+    // Update blog state directly for all fields including category
+    updateBlog({
+      ...blog,
+      [name]: value,
+    });
   };
 
   const handleTagInput = (e) => {
@@ -257,7 +247,7 @@ const PublishForm = () => {
                 </label>
                 <select
                   name="category"
-                  value={formData.category}
+                  value={category || ""}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                 >

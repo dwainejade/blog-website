@@ -28,6 +28,10 @@ const blogSchema = mongoose.Schema(
       type: [String],
       // required: true
     },
+    category: {
+      type: String,
+      default: "",
+    },
     author: {
       type: Schema.Types.ObjectId,
       required: true,

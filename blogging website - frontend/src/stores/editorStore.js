@@ -75,6 +75,7 @@ const useEditorStore = create(
           description: blog.description || "",
           content: blog.content || { blocks: [] },
           tags: blog.tags || [],
+          category: blog.category || "",
           original_blog_id: blog.originalBlogId || null,
         };
 
@@ -161,6 +162,7 @@ const useEditorStore = create(
                 content: editorContent,
                 tags: blog.tags || [],
                 description: blog.description || "",
+                category: blog.category || "",
                 author: blog.author,
                 draftId: blog._id,
                 blogId: null,
@@ -185,14 +187,32 @@ const useEditorStore = create(
 
               const draft = draftResponse.data.draft;
 
+              // Process draft content the same way as original blog content
+              let draftEditorContent = { blocks: [] };
+
+              if (draft.content && Array.isArray(draft.content) && draft.content.length > 0) {
+                // Content is stored as an array with EditorJS object inside
+                draftEditorContent = draft.content[0];
+              } else if (draft.content && draft.content.blocks) {
+                // Content is already in EditorJS format
+                draftEditorContent = draft.content;
+              } else if (draft.content) {
+                // Use content as-is if it exists
+                draftEditorContent = draft.content;
+              } else {
+                // Fallback to original blog's processed content
+                draftEditorContent = editorContent;
+              }
+
               // Set the draft data in the store
               set({
                 blog: {
                   title: draft.title || "",
                   banner: draft.banner || "",
-                  content: draft.content || editorContent,
+                  content: draftEditorContent,
                   tags: draft.tags || [],
                   description: draft.description || "",
+                  category: draft.category || "",
                   author: draft.author,
                   draftId: draft._id,
                   blogId: null,
@@ -244,7 +264,27 @@ const useEditorStore = create(
           let response;
 
           if (blog.draftId) {
-            // This is a draft - use the new publish-draft endpoint
+            // First, save the current draft with latest changes
+            await axios.put(
+              `${getServerDomain()}/drafts/${blog.draftId}`,
+              {
+                title: blog.title,
+                banner: blog.banner || "",
+                description: blog.description || "",
+                content: blog.content || { blocks: [] },
+                tags: blog.tags || [],
+                category: blog.category || "",
+                original_blog_id: blog.originalBlogId || null,
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                withCredentials: true,
+              }
+            );
+
+            // Then publish the updated draft
             response = await axios.post(
               `${getServerDomain()}/publish-draft/${blog.draftId}`,
               {},
@@ -269,6 +309,7 @@ const useEditorStore = create(
               description: blog.description,
               content: blog.content,
               tags: blog.tags,
+              category: blog.category || "",
               draft: false,
             };
 
