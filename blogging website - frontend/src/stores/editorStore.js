@@ -28,6 +28,7 @@ const useEditorStore = create(
     (set, get) => ({
       editorState: "editor",
       blog: blogStructure,
+      isLoadingForEdit: false,
       textEditor: {
         isReady: false,
       },
@@ -132,6 +133,16 @@ const useEditorStore = create(
 
       // Load existing blog for editing
       loadBlogForEdit: async (blogId) => {
+        const { isLoadingForEdit } = get();
+
+        // Prevent duplicate calls
+        if (isLoadingForEdit) {
+          console.log("Already loading blog for edit, skipping duplicate call");
+          return { success: false, error: "Already loading" };
+        }
+
+        set({ isLoadingForEdit: true });
+
         try {
           const response = await axios.get(
             `${getServerDomain()}/get-blog/${blogId}`,
@@ -234,6 +245,8 @@ const useEditorStore = create(
           console.error("Error loading blog for edit:", error);
           toast.error(error.response?.data?.error || "Failed to load blog for editing");
           return { success: false, error: error.response?.data?.error || "Failed to load blog" };
+        } finally {
+          set({ isLoadingForEdit: false });
         }
       },
 
