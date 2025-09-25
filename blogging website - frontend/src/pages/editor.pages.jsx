@@ -31,7 +31,7 @@ const EditorPage = () => {
     if (isAuthenticated && isInitialized) {
       loadBlogContent();
     }
-  }, [blog_id, isAuthenticated, isInitialized, loadBlogForEdit, resetBlog]);
+  }, [blog_id, isAuthenticated, isInitialized]);
 
   if (isLoading || !isInitialized || blogLoading) {
     return <div>Loading...</div>;

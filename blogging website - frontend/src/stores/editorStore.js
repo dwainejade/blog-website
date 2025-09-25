@@ -222,7 +222,6 @@ const useEditorStore = create(
                 editorState: "editor"
               });
 
-              toast.success("Draft created for editing");
             } catch (draftError) {
               console.error("Error creating draft:", draftError);
               toast.error("Failed to create draft for editing");

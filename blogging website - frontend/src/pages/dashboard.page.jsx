@@ -19,7 +19,9 @@ const DashboardPage = () => {
   } = useBlogStore();
 
   const deleteBlog = async (blogId) => {
-    const blog = userBlogs.find(b => b._id === blogId) || userDrafts.find(b => b._id === blogId);
+    const blog =
+      userBlogs.find((b) => b._id === blogId) ||
+      userDrafts.find((b) => b._id === blogId);
     if (window.confirm(`Are you sure you want to delete "${blog?.title}"?`)) {
       await deleteBlogFromStore(blogId);
     }
@@ -81,7 +83,7 @@ const DashboardPage = () => {
             <div className="lg:col-span-2">
               {/* Quick Stats */}
               <div className="bg-white border border-grey rounded-lg p-6 mb-6">
-                <h2 className="font-medium text-xl mb-4">Overview</h2>
+                <h3 className="font-bold text-xl mb-4">Overview</h3>
                 <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-grey/20 rounded-lg">
                     <div className="text-2xl font-bold text-black">
