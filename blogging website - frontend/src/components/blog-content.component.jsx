@@ -107,7 +107,7 @@ const BlogContent = ({ content }) => {
                   >
                     Photo by{" "}
                     <a
-                      href={`${block.data.unsplash.profileLink}?utm_source=blog-editor&utm_medium=referral`}
+                      href={`${block.data.unsplash.profileLink}?utm_source=blog-editor&utm_medium=referral&utm_campaign=api-credit`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-dark-grey transition-colors duration-200"
@@ -121,7 +121,7 @@ const BlogContent = ({ content }) => {
                     </a>{" "}
                     on{" "}
                     <a
-                      href="https://unsplash.com/?utm_source=blog-editor&utm_medium=referral"
+                      href="https://unsplash.com/?utm_source=blog-editor&utm_medium=referral&utm_campaign=api-credit"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-dark-grey transition-colors duration-200"
