@@ -130,10 +130,19 @@ const formatDataToSend = (user) => {
     profile_img: user.personal_info.profile_img,
     username: user.personal_info.username,
     fullname: user.personal_info.fullname,
+    bio: user.personal_info.bio,
     id: user._id,
     role: user.role,
     personal_info: user.personal_info,
     account_info: user.account_info,
+    social_links: user.social_links,
+    // Also include flattened social links for compatibility
+    youtube: user.social_links?.youtube || "",
+    instagram: user.social_links?.instagram || "",
+    facebook: user.social_links?.facebook || "",
+    twitter: user.social_links?.twitter || "",
+    github: user.social_links?.github || "",
+    website: user.social_links?.website || "",
   };
 };
 
@@ -1106,9 +1115,6 @@ server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
 // Profile management endpoints
 server.put("/update-profile", verifyJWT, async (req, res) => {
   try {
-    console.log("Update profile request - userId:", req.user);
-    console.log("Update profile request - body:", req.body);
-
     const userId = req.user;
     const { fullname, username, bio, social_links } = req.body;
 
@@ -1144,12 +1150,12 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
 
     // Prepare update object
     const updateData = {};
-    if (fullname) updateData["personal_info.fullname"] = fullname;
-    if (username) updateData["personal_info.username"] = username;
+    if (fullname !== undefined && fullname !== null) updateData["personal_info.fullname"] = fullname;
+    if (username !== undefined && username !== null) updateData["personal_info.username"] = username;
     if (bio !== undefined) updateData["personal_info.bio"] = bio;
-    if (social_links) {
+    if (social_links && typeof social_links === 'object') {
       Object.keys(social_links).forEach((platform) => {
-        updateData[`social_links.${platform}`] = social_links[platform];
+        updateData[`social_links.${platform}`] = social_links[platform] || "";
       });
     }
 
@@ -1167,6 +1173,7 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
       email: updatedUser.personal_info?.email || "",
       bio: updatedUser.personal_info?.bio || "",
       profile_img: updatedUser.personal_info?.profile_img || "",
+      social_links: updatedUser.social_links || {},
       ...(updatedUser.social_links || {}),
     };
 

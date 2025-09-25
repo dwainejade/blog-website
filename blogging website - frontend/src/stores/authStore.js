@@ -260,6 +260,7 @@ const useAuthStore = create(
         `${getServerDomain()}/update-profile`,
         profileData
       );
+
       set({
         user: data.user,
         isLoading: false,

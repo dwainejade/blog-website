@@ -305,7 +305,7 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                   />
                 ) : (
-                  <h2 className="text-3xl font-bold text-black">
+                  <h2 className="text-3xl font-bold text-black capitalize">
                     {isOwnProfile
                       ? (profileData.fullname || "Not provided")
                       : (displayUser?.personal_info?.fullname || "Not provided")
@@ -400,10 +400,10 @@ const ProfilePage = () => {
                       href={externalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center w-12 h-12 bg-grey/20 hover:bg-purple/20 rounded-full transition-colors group"
+                      className="flex items-center justify-center w-16 h-16 bg-grey/20 hover:bg-purple/20 rounded-full transition-colors group"
                       title={`${platform.charAt(0).toUpperCase() + platform.slice(1)}`}
                     >
-                      <i className={`fi ${platform === 'website' ? 'fi-rr-globe' : `fi-brands-${platform}`} text-xl text-dark-grey group-hover:text-purple transition-colors`}></i>
+                      <i className={`fi ${platform === 'website' ? 'fi-rr-globe' : `fi-brands-${platform}`} text-2xl text-dark-grey group-hover:text-purple transition-colors`}></i>
                     </a>
                   );
                 }
@@ -424,7 +424,13 @@ const ProfilePage = () => {
                 </div>
                 <div className="bg-grey/10 p-6 rounded-lg text-center">
                   <p className="text-3xl font-bold text-dark-grey">
-                    {formatDate(displayUser?.joinedAt).split(' ')[2] || "2024"}
+                    {displayUser?.joinedAt
+                      ? new Date(displayUser.joinedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })
+                      : "Unknown"}
                   </p>
                   <p className="text-sm text-dark-grey mt-2">Joined</p>
                 </div>
