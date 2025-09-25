@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AnimationWrapper from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
+import DashboardBlogCard from "../components/dashboard-blog-card.component";
 import axios from "axios";
 
 const SuperAdminDashboard = () => {
@@ -15,6 +16,7 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [blogSearch, setBlogSearch] = useState("");
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
   const [debugLoading, setDebugLoading] = useState(false);
   const [pingTest, setPingTest] = useState(null);
@@ -505,65 +507,15 @@ const SuperAdminDashboard = () => {
                     <div className="loader"></div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {blogs.map((blog) => (
-                      <div
+                      <DashboardBlogCard
                         key={blog._id}
-                        className="border border-grey rounded-lg p-4"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-medium text-lg mb-2">
-                              {blog.title}
-                            </h3>
-                            <p className="text-dark-grey mb-3">
-                              {blog.description}
-                            </p>
-                            <div className="flex items-center gap-4 text-sm text-dark-grey">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={blog.author.personal_info.profile_img}
-                                  alt="Author"
-                                  className="w-6 h-6 rounded-full object-cover"
-                                />
-                                <span>
-                                  {blog.author.personal_info.fullname}
-                                </span>
-                              </div>
-                              <span>
-                                {new Date(
-                                  blog.publishedAt
-                                ).toLocaleDateString()}
-                              </span>
-                              <span
-                                className={`px-2 py-1 rounded ${
-                                  blog.draft
-                                    ? "bg-yellow/20 text-yellow"
-                                    : "bg-green/20 text-green"
-                                }`}
-                              >
-                                {blog.draft ? "Draft" : "Published"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                window.open(`/blog/${blog.blog_id}`, "_blank")
-                              }
-                              className="btn-light"
-                            >
-                              View
-                            </button>
-                            <button
-                              onClick={() => deleteBlog(blog._id)}
-                              className="btn-red"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                        blog={blog}
+                        onDelete={deleteBlog}
+                        activeDropdown={activeDropdown}
+                        setActiveDropdown={setActiveDropdown}
+                      />
                     ))}
                   </div>
                 )}

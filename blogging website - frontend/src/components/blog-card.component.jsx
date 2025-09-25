@@ -9,6 +9,7 @@ const BlogCard = ({ blog }) => {
     description,
     banner,
     publishedAt,
+    tags,
     author: { personal_info: { fullname, username, profile_img } = {} } = {},
   } = blog;
 
@@ -16,6 +17,12 @@ const BlogCard = ({ blog }) => {
     e.preventDefault();
     e.stopPropagation();
     navigate(`/user/${username}`);
+  };
+
+  const handleTagClick = (e, tag) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/search?q=${encodeURIComponent(tag)}&type=blogs`);
   };
 
   return (
@@ -51,6 +58,25 @@ const BlogCard = ({ blog }) => {
         <p className="text-lg font-gelasio leading-7 line-clamp-3 mb-4 text-dark-grey">
           {description}
         </p>
+
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {tags.slice(0, 4).map((tag, index) => (
+              <span
+                key={index}
+                onClick={(e) => handleTagClick(e, tag)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 text-sm rounded-full cursor-pointer transition-colors duration-200"
+              >
+                #{tag}
+              </span>
+            ))}
+            {tags.length > 4 && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-sm rounded-full">
+                +{tags.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AnimationWrapper from "../common/page-animation";
 import useAuthStore from "../stores/authStore";
@@ -8,14 +8,24 @@ import DashboardBlogCard from "../components/dashboard-blog-card.component";
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuthStore();
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const {
     userBlogs,
     userDrafts,
     isLoadingUserBlogs,
     fetchUserBlogs,
-    deleteBlog,
+    deleteBlog: deleteBlogFromStore,
     error: blogError,
   } = useBlogStore();
+
+  const deleteBlog = async (blogId) => {
+    const blog =
+      userBlogs.find((b) => b._id === blogId) ||
+      userDrafts.find((b) => b._id === blogId);
+    if (window.confirm(`Are you sure you want to delete "${blog?.title}"?`)) {
+      await deleteBlogFromStore(blogId);
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -73,7 +83,7 @@ const DashboardPage = () => {
             <div className="lg:col-span-2">
               {/* Quick Stats */}
               <div className="bg-white border border-grey rounded-lg p-6 mb-6">
-                <h2 className="font-medium text-xl mb-4">Overview</h2>
+                <h3 className="font-bold text-xl mb-4">Overview</h3>
                 <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-grey/20 rounded-lg">
                     <div className="text-2xl font-bold text-black">
@@ -106,11 +116,14 @@ const DashboardPage = () => {
                 </div>
               </div>
 
-              {/* Recent Blogs */}
+              {/* Published Blogs */}
               <div className="bg-white border border-grey rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium text-xl">Recent Blogs</h2>
-                  <button className="text-purple hover:underline">
+                  <h3 className="font-bold text-xl">Published Blogs</h3>
+                  <button
+                    onClick={() => navigate("/")}
+                    className="text-purple hover:underline"
+                  >
                     View All
                   </button>
                 </div>
@@ -135,6 +148,8 @@ const DashboardPage = () => {
                             key={blog._id}
                             blog={blog}
                             onDelete={deleteBlog}
+                            activeDropdown={activeDropdown}
+                            setActiveDropdown={setActiveDropdown}
                           />
                         ))}
                       </div>
@@ -178,68 +193,13 @@ const DashboardPage = () => {
                         key={draft._id}
                         blog={draft}
                         onDelete={deleteBlog}
+                        activeDropdown={activeDropdown}
+                        setActiveDropdown={setActiveDropdown}
                       />
                     ))}
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Sidebar - Right Column */}
-            <div className="space-y-6">
-              {/* Profile Card */}
-              <div className="bg-white border border-grey rounded-lg p-6">
-                <h3 className="font-medium text-lg mb-4">Profile</h3>
-                <div className="flex items-center gap-4 mb-4">
-                  <img
-                    src={user?.personal_info?.profile_img}
-                    alt="Profile"
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-black">
-                      {user?.personal_info?.fullname}
-                    </h4>
-                    <p className="text-sm text-dark-grey">
-                      @{user?.personal_info?.username}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-sm text-dark-grey mb-4">
-                  {user?.personal_info?.bio || "No bio yet"}
-                </div>
-                <button className="btn-light w-full">Edit Profile</button>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white border border-grey rounded-lg p-6">
-                <h3 className="font-medium text-lg mb-4">Quick Actions</h3>
-                <div className="space-y-3">
-                  {(user?.role === "admin" || user?.role === "superadmin") && (
-                    <>
-                      <button
-                        onClick={() => navigate("/editor")}
-                        className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3"
-                      >
-                        <i className="fi fi-rr-edit text-lg"></i>
-                        <span>Write New Blog</span>
-                      </button>
-                      <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
-                        <i className="fi fi-rr-document text-lg"></i>
-                        <span>Manage Drafts ({userDrafts?.length || 0})</span>
-                      </button>
-                    </>
-                  )}
-                  <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
-                    <i className="fi fi-rr-settings text-lg"></i>
-                    <span>Settings</span>
-                  </button>
-                  <button className="w-full text-left p-3 hover:bg-grey/20 rounded-lg flex items-center gap-3">
-                    <i className="fi fi-rr-stats text-lg"></i>
-                    <span>Analytics</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ import cookieParser from "cookie-parser";
 import User from "./Schema/User.js";
 import Blog from "./Schema/Blog.js";
 import Comment from "./Schema/Comment.js";
+import Notification from "./Schema/Notification.js";
 
 // dotenv.config();
 
@@ -427,7 +428,7 @@ server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    let { title, banner, description, content, tags } = req.body;
+    let { title, banner, description, content, tags, category } = req.body;
 
     // Only validate title for drafts
     if (!title || !title.trim()) {
@@ -470,8 +471,10 @@ server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
       description: description || "",
       content: content || { blocks: [] },
       tags: tags || [],
+      category: category || "",
       author: req.user,
       draft: true,
+      original_blog_id: req.body.original_blog_id || null,
     });
 
     const savedBlog = await blog.save();
@@ -509,7 +512,7 @@ server.put(
         return res.status(404).json({ error: "User not found" });
       }
 
-      let { title, banner, description, content, tags } = req.body;
+      let { title, banner, description, content, tags, category } = req.body;
 
       // Only validate title for drafts
       if (!title || !title.trim()) {
@@ -535,6 +538,7 @@ server.put(
           description: description || "",
           content: content || { blocks: [] },
           tags: tags || [],
+          category: category || "",
         },
         { new: true }
       );
@@ -558,6 +562,79 @@ server.put(
     }
   }
 );
+
+// Create draft from existing published blog for editing
+server.post("/create-edit-draft/:blogId", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
+  try {
+    const { blogId } = req.params;
+    const userId = req.user;
+
+    // Find the original published blog
+    const originalBlog = await Blog.findById(blogId);
+    if (!originalBlog) {
+      return res.status(404).json({ error: "Original blog not found" });
+    }
+
+    // Check if user is authorized to edit this blog
+    const user = await User.findById(userId);
+    const isAuthor = originalBlog.author.toString() === userId;
+    const isAdmin = user.role === "admin" || user.role === "superadmin";
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to edit this blog" });
+    }
+
+    // Check if draft already exists for this blog
+    let existingDraft = await Blog.findOne({
+      original_blog_id: blogId,
+      author: userId,
+      draft: true
+    });
+
+    if (existingDraft) {
+      // Return existing draft
+      return res.status(200).json({
+        message: "Draft already exists",
+        draftId: existingDraft._id,
+        blog_id: existingDraft.blog_id,
+        draft: existingDraft
+      });
+    }
+
+    // Create new draft copy
+    const draftBlog = new Blog({
+      blog_id: originalBlog.blog_id + "-draft-" + nanoid(6), // Unique blog_id for draft
+      title: originalBlog.title,
+      banner: originalBlog.banner,
+      description: originalBlog.description,
+      content: originalBlog.content,
+      tags: originalBlog.tags,
+      category: originalBlog.category || "",
+      author: userId,
+      draft: true,
+      original_blog_id: blogId // Link to original blog
+    });
+
+    // Ensure draft blog_id is unique
+    let existingBlogId = await Blog.findOne({ blog_id: draftBlog.blog_id });
+    while (existingBlogId) {
+      draftBlog.blog_id = originalBlog.blog_id + "-draft-" + nanoid(6);
+      existingBlogId = await Blog.findOne({ blog_id: draftBlog.blog_id });
+    }
+
+    const savedDraft = await draftBlog.save();
+
+    res.status(201).json({
+      message: "Draft created from published blog",
+      draftId: savedDraft._id,
+      blog_id: savedDraft.blog_id,
+      draft: savedDraft
+    });
+  } catch (error) {
+    console.error("Error creating edit draft:", error);
+    res.status(500).json({ error: "Failed to create draft" });
+  }
+});
 
 server.post(
   "/create-blog",
@@ -586,7 +663,7 @@ server.post(
         username: user.personal_info?.username
       });
 
-      let { title, banner, description, content, tags, draft } = req.body;
+      let { title, banner, description, content, tags, category, draft } = req.body;
 
       // Validate required fields
       if (!title || !title.trim()) {
@@ -646,8 +723,10 @@ server.post(
         description: description || "",
         content,
         tags: tags || [],
+        category: category || "",
         author: req.user, // Use verified user ID
         draft: draft || false,
+        original_blog_id: req.body.original_blog_id || null,
       });
 
       const savedBlog = await blog.save();
@@ -680,6 +759,98 @@ server.post(
     }
   }
 );
+
+// Publish draft - handles both new blogs and updating existing blogs from drafts
+server.post("/publish-draft/:draftId", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user;
+
+    // Find the draft
+    const draft = await Blog.findOne({
+      _id: draftId,
+      author: userId,
+      draft: true
+    });
+
+    if (!draft) {
+      return res.status(404).json({ error: "Draft not found or not authorized" });
+    }
+
+    // Validate required fields for publishing
+    if (!draft.title || !draft.title.trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+    if (!draft.description || !draft.description.trim()) {
+      return res.status(400).json({ error: "Blog description is required" });
+    }
+    if (draft.description.length < 50) {
+      return res.status(400).json({ error: "Description should be at least 50 characters" });
+    }
+    if (draft.description.length > 200) {
+      return res.status(400).json({ error: "Description should not exceed 200 characters" });
+    }
+
+    if (draft.original_blog_id) {
+      // This is an edit draft - update the original blog
+      const originalBlog = await Blog.findById(draft.original_blog_id);
+      if (!originalBlog) {
+        return res.status(404).json({ error: "Original blog not found" });
+      }
+
+      // Update original blog with draft content
+      const updatedBlog = await Blog.findByIdAndUpdate(
+        draft.original_blog_id,
+        {
+          title: draft.title,
+          banner: draft.banner,
+          description: draft.description,
+          content: draft.content,
+          tags: draft.tags,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).populate(
+        "author",
+        "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      );
+
+      // Delete the draft
+      await Blog.findByIdAndDelete(draftId);
+
+      res.status(200).json({
+        message: "Blog updated successfully from draft",
+        blog: updatedBlog
+      });
+    } else {
+      // This is a new blog draft - publish it
+      const publishedBlog = await Blog.findByIdAndUpdate(
+        draftId,
+        {
+          draft: false,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).populate(
+        "author",
+        "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      );
+
+      // Increment user's published post count
+      await User.findByIdAndUpdate(userId, {
+        $inc: { "account_info.total_posts": 1 }
+      });
+
+      res.status(200).json({
+        message: "Draft published successfully",
+        blog: publishedBlog
+      });
+    }
+  } catch (error) {
+    console.error("Error publishing draft:", error);
+    res.status(500).json({ error: "Failed to publish draft" });
+  }
+});
 
 // Get latest blogs
 server.get("/latest-blogs", async (req, res) => {
@@ -1313,6 +1484,29 @@ server.post("/add-comment", verifyJWT, async (req, res) => {
           { _id: replying_to },
           { $push: { children: commentFile._id } }
         );
+
+        // Create notification for reply
+        const originalComment = await Comment.findById(replying_to);
+        if (originalComment) {
+          await createNotification(
+            "reply",
+            blog_id,
+            originalComment.commented_by,
+            user_id,
+            commentFile._id,
+            commentFile._id,
+            replying_to
+          );
+        }
+      } else {
+        // Create notification for new comment
+        await createNotification(
+          "comment",
+          blog_id,
+          blog_author,
+          user_id,
+          commentFile._id
+        );
       }
 
       return res.status(200).json({
@@ -1834,6 +2028,195 @@ server.get("/debug/auth", verifyJWT, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ===== BLOG LIKE/UNLIKE ROUTES =====
+
+// Like/Unlike a blog
+server.post("/like-blog", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { _id: blog_id, isLikedByUser } = req.body;
+
+    const incrementVal = !isLikedByUser ? 1 : -1;
+
+    const blog = await Blog.findOneAndUpdate(
+      { _id: blog_id },
+      { $inc: { "activity.total_likes": incrementVal } },
+      { new: true }
+    ).select("activity.total_likes author");
+
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    // Create notification for like (not unlike)
+    if (!isLikedByUser) {
+      await createNotification(
+        "like",
+        blog_id,
+        blog.author,
+        user_id
+      );
+    }
+
+    return res.status(200).json({
+      liked_by_user: !isLikedByUser,
+      total_likes: blog.activity.total_likes
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== NOTIFICATION ROUTES =====
+
+// Get all notifications for a user
+server.get("/notifications", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    const notifications = await Notification.find({ notification_for: user_id })
+      .populate({
+        path: "user",
+        select: "personal_info.fullname personal_info.username personal_info.profile_img"
+      })
+      .populate({
+        path: "blog",
+        select: "title blog_id"
+      })
+      .populate({
+        path: "comment",
+        select: "comment"
+      })
+      .populate({
+        path: "reply",
+        select: "comment"
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Notification.countDocuments({ notification_for: user_id });
+    const unreadCount = await Notification.countDocuments({
+      notification_for: user_id,
+      seen: false
+    });
+
+    return res.status(200).json({
+      notifications,
+      total,
+      unreadCount,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark notification as seen
+server.patch("/notification/:id/seen", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { id } = req.params;
+
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, notification_for: user_id },
+      { seen: true },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    return res.status(200).json({ message: "Notification marked as seen" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark all notifications as seen
+server.patch("/notifications/seen", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+
+    await Notification.updateMany(
+      { notification_for: user_id, seen: false },
+      { seen: true }
+    );
+
+    return res.status(200).json({ message: "All notifications marked as seen" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a notification
+server.delete("/notification/:id", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+    const { id } = req.params;
+
+    const notification = await Notification.findOneAndDelete({
+      _id: id,
+      notification_for: user_id
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    return res.status(200).json({ message: "Notification deleted successfully" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get unread notification count
+server.get("/notifications/unread-count", verifyJWT, async (req, res) => {
+  try {
+    const user_id = req.user;
+
+    const unreadCount = await Notification.countDocuments({
+      notification_for: user_id,
+      seen: false
+    });
+
+    return res.status(200).json({ unreadCount });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper function to create notifications (will be used by other routes)
+const createNotification = async (type, blog_id, notification_for, user_id, comment_id = null, reply_id = null, replied_on_comment_id = null) => {
+  try {
+    // Don't create notification if user is notifying themselves
+    if (notification_for.toString() === user_id.toString()) {
+      return;
+    }
+
+    const notificationObj = {
+      type,
+      blog: blog_id,
+      notification_for,
+      user: user_id
+    };
+
+    if (comment_id) notificationObj.comment = comment_id;
+    if (reply_id) notificationObj.reply = reply_id;
+    if (replied_on_comment_id) notificationObj.replied_on_comment = replied_on_comment_id;
+
+    const notification = new Notification(notificationObj);
+    await notification.save();
+  } catch (err) {
+    console.error("Error creating notification:", err);
+  }
+};
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

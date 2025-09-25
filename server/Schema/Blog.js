@@ -28,6 +28,10 @@ const blogSchema = mongoose.Schema(
       type: [String],
       // required: true
     },
+    category: {
+      type: String,
+      default: "",
+    },
     author: {
       type: Schema.Types.ObjectId,
       required: true,
@@ -58,6 +62,11 @@ const blogSchema = mongoose.Schema(
     draft: {
       type: Boolean,
       default: false,
+    },
+    original_blog_id: {
+      type: Schema.Types.ObjectId,
+      ref: "blogs",
+      default: null,
     },
   },
   {
