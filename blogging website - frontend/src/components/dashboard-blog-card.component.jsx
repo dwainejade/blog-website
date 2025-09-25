@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDay } from "../common/date";
+import Tag from "./tag.component";
 
-const DashboardBlogCard = ({ blog, onDelete, activeDropdown, setActiveDropdown }) => {
+const DashboardBlogCard = ({
+  blog,
+  onDelete,
+  activeDropdown,
+  setActiveDropdown,
+}) => {
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -94,7 +100,9 @@ const DashboardBlogCard = ({ blog, onDelete, activeDropdown, setActiveDropdown }
             {/* Actions Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setActiveDropdown(showDropdown ? null : blog._id)}
+                onClick={() =>
+                  setActiveDropdown(showDropdown ? null : blog._id)
+                }
                 className="w-8 h-8 rounded-full hover:bg-grey/30 flex items-center justify-center"
                 disabled={isDeleting}
               >
@@ -158,13 +166,13 @@ const DashboardBlogCard = ({ blog, onDelete, activeDropdown, setActiveDropdown }
         {tags && tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.slice(0, 3).map((tag, index) => (
-              <span
+              <Tag
                 key={index}
                 onClick={(e) => handleTagClick(e, tag)}
-                className="px-2 py-1 bg-grey/30 hover:bg-grey/50 text-dark-grey hover:text-black text-xs rounded-full cursor-pointer transition-colors duration-200"
+                size="medium"
               >
-                #{tag}
-              </span>
+                {tag}
+              </Tag>
             ))}
             {tags.length > 3 && (
               <span className="text-xs text-dark-grey">

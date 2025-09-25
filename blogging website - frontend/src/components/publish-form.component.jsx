@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import useEditorStore from "../stores/editorStore";
 import Nav from "./nav.component";
 import EditorNav from "./editor-nav.component";
+import Tag from "./tag.component";
 
 const PublishForm = () => {
   const navigate = useNavigate();
@@ -140,12 +141,9 @@ const PublishForm = () => {
                 {currentTags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {currentTags.slice(0, 3).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                      >
-                        #{tag}
-                      </span>
+                      <Tag key={index} size="small">
+                        {tag}
+                      </Tag>
                     ))}
                     {currentTags.length > 3 && (
                       <span className="px-2 py-1 bg-gray-100 text-gray-500 text-sm rounded-full">
@@ -223,18 +221,19 @@ const PublishForm = () => {
                 {currentTags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {currentTags.map((tag, index) => (
-                      <span
+                      <Tag
+                        size="small"
                         key={index}
                         className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
                       >
-                        #{tag}
+                        {tag}
                         <button
                           onClick={() => removeTag(tag)}
                           className="text-gray-500 hover:text-red-500 ml-1"
                         >
                           ×
                         </button>
-                      </span>
+                      </Tag>
                     ))}
                   </div>
                 )}

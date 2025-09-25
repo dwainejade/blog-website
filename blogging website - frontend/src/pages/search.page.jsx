@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Tag from "../components/tag.component";
 // Simple date formatting function
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -96,13 +97,13 @@ const SearchPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
             {blog.tags.slice(0, 3).map((tag, i) => (
-              <button
+              <Tag
                 key={i}
                 onClick={() => handleTagClick(tag)}
                 className="text-xs bg-grey px-2 py-1 rounded-full hover:bg-black/10 hover:text-black transition-colors cursor-pointer"
               >
-                #{tag}
-              </button>
+                {tag}
+              </Tag>
             ))}
           </div>
         </div>
