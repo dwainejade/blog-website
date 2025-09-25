@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import logo from "../imgs/logo.png";
+import logo from "../imgs/c&s-rect-logo.svg";
 import useAuthStore from "../stores/authStore";
 import UserNavigationPanel from "./user-navigation.component";
 
@@ -11,7 +11,7 @@ const Nav = ({ type = "editor" }) => {
   if (type === "editor") {
     return (
       <nav className="navbar">
-        <Link to="/" className="flex-none w-10">
+        <Link to="/" className="flex-none w-24">
           <img src={logo} alt="Logo" className="w-full" />
         </Link>
 
