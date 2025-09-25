@@ -42,7 +42,7 @@ const Navbar = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onBlur={() => setSearchBarOpen(false)}
-              className="w-full md:w-auto bg-grey p-4 pl-6 pr-12 rounded-full placeholder:italic placeholder:text-sm placeholder:text-dark-grey"
+              className="w-full md:w-auto bg-grey p-4 pl-6 pr-12 rounded-full placeholder:italic placeholder:text-sm placeholder:text-dark-grey text-[16px]"
             />
             <button
               type="submit"
