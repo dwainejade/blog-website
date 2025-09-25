@@ -14,9 +14,16 @@ const DashboardPage = () => {
     userDrafts,
     isLoadingUserBlogs,
     fetchUserBlogs,
-    deleteBlog,
+    deleteBlog: deleteBlogFromStore,
     error: blogError,
   } = useBlogStore();
+
+  const deleteBlog = async (blogId) => {
+    const blog = userBlogs.find(b => b._id === blogId) || userDrafts.find(b => b._id === blogId);
+    if (window.confirm(`Are you sure you want to delete "${blog?.title}"?`)) {
+      await deleteBlogFromStore(blogId);
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

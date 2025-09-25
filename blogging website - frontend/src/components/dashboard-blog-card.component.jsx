@@ -30,16 +30,14 @@ const DashboardBlogCard = ({ blog, onDelete, activeDropdown, setActiveDropdown }
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      setIsDeleting(true);
-      try {
-        await onDelete(blog._id);
-      } catch (error) {
-        console.error("Error deleting blog:", error);
-      } finally {
-        setIsDeleting(false);
-        setActiveDropdown(null);
-      }
+    setIsDeleting(true);
+    setActiveDropdown(null);
+    try {
+      await onDelete(blog._id);
+    } catch (error) {
+      console.error("Error deleting blog:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
