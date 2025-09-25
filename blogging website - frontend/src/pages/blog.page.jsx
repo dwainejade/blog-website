@@ -10,6 +10,7 @@ import {
 } from "../common/reading-time";
 import AnimationWrapper from "../common/page-animation";
 import EditorNav from "../components/editor-nav.component";
+import Tag from "../components/tag.component";
 
 const BlogPage = () => {
   const { blog_id } = useParams();
@@ -158,13 +159,13 @@ const BlogPage = () => {
           <div className="mt-12">
             <div className="flex flex-wrap gap-2 mt-7">
               {tags.map((tag, index) => (
-                <span
+                <Tag
                   key={index}
                   onClick={() => handleTagClick(tag)}
-                  className="tag cursor-pointer hover:bg-gray-200 transition-colors duration-200"
+                  size="large"
                 >
-                  #{tag}
-                </span>
+                  {tag}
+                </Tag>
               ))}
             </div>
           </div>

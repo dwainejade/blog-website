@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { formatDate } from "../common/date";
+import Tag from "./tag.component";
 
 const BlogCard = ({ blog }) => {
   const navigate = useNavigate();
@@ -62,13 +63,13 @@ const BlogCard = ({ blog }) => {
         {tags && tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
             {tags.slice(0, 4).map((tag, index) => (
-              <span
+              <Tag
                 key={index}
                 onClick={(e) => handleTagClick(e, tag)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 text-sm rounded-full cursor-pointer transition-colors duration-200"
+                size="medium"
               >
-                #{tag}
-              </span>
+                {tag}
+              </Tag>
             ))}
             {tags.length > 4 && (
               <span className="px-2 py-1 bg-gray-100 text-gray-500 text-sm rounded-full">
