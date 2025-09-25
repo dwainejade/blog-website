@@ -13,6 +13,9 @@ import Blog from "./Schema/Blog.js";
 import Comment from "./Schema/Comment.js";
 import Notification from "./Schema/Notification.js";
 
+// tutorial content
+import { tutorialBlogContent } from "./tutorialContent.js";
+
 // dotenv.config();
 
 const server = express();
@@ -250,6 +253,32 @@ const gernerateUsername = async (email) => {
   return username;
 };
 
+// Helper function to create tutorial draft for new users
+const createTutorialDraft = async (userId) => {
+  try {
+    const tutorialDraft = new Blog({
+      blog_id: nanoid(),
+      title: tutorialBlogContent.title,
+      banner: tutorialBlogContent.banner,
+      description: tutorialBlogContent.description,
+      content: tutorialBlogContent.content,
+      tags: tutorialBlogContent.tags,
+      category: tutorialBlogContent.category,
+      author: userId,
+      draft: true, // This is a draft
+      original_blog_id: null
+    });
+
+    await tutorialDraft.save();
+    console.log(`Tutorial draft created for user ${userId}`);
+    return tutorialDraft;
+  } catch (error) {
+    console.error('Error creating tutorial draft:', error);
+    // Don't fail the signup process if tutorial creation fails
+    return null;
+  }
+};
+
 server.post("/signup", async (req, res) => {
   let { fullname, email, password } = req.body;
 
@@ -296,9 +325,12 @@ server.post("/signup", async (req, res) => {
 
     user
       .save()
-      .then((user) => {
+      .then(async (user) => {
         const { accessToken, refreshToken } = generateTokens(user);
         setTokenCookies(res, accessToken, refreshToken);
+
+        // Create tutorial draft for new user
+        await createTutorialDraft(user._id);
 
         // Also send tokens in response body for mobile fallback
         const userData = formatDataToSend(user);
@@ -2224,6 +2256,48 @@ const createNotification = async (type, blog_id, notification_for, user_id, comm
     console.error("Error creating notification:", err);
   }
 };
+
+// Manual endpoint to add tutorial draft to existing user
+server.post("/add-tutorial-draft/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    // Find user by username
+    const user = await User.findOne({ "personal_info.username": username });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if tutorial draft already exists for this user
+    const existingTutorial = await Blog.findOne({
+      author: user._id,
+      title: tutorialBlogContent.title,
+      draft: true
+    });
+
+    if (existingTutorial) {
+      return res.status(400).json({ error: "Tutorial draft already exists for this user" });
+    }
+
+    // Create tutorial draft
+    const tutorialDraft = await createTutorialDraft(user._id);
+
+    if (tutorialDraft) {
+      return res.status(200).json({
+        message: "Tutorial draft created successfully",
+        draftId: tutorialDraft._id,
+        user: user.personal_info.username
+      });
+    } else {
+      return res.status(500).json({ error: "Failed to create tutorial draft" });
+    }
+
+  } catch (error) {
+    console.error("Error adding tutorial draft:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
