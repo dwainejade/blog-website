@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDay } from "../common/date";
 
-const DashboardBlogCard = ({ blog, onDelete }) => {
+const DashboardBlogCard = ({ blog, onDelete, activeDropdown, setActiveDropdown }) => {
   const navigate = useNavigate();
-  const [showDropdown, setShowDropdown] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const showDropdown = activeDropdown === blog._id;
 
   const {
     blog_id,
@@ -37,7 +38,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
         console.error("Error deleting blog:", error);
       } finally {
         setIsDeleting(false);
-        setShowDropdown(false);
+        setActiveDropdown(null);
       }
     }
   };
@@ -69,7 +70,10 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
       <div className="flex-1 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-3 sm:gap-0">
           <div className="flex-1 min-w-0 sm:mr-4">
-            <h3 className="font-medium text-lg text-black line-clamp-2 mb-1">
+            <h3
+              className="font-medium text-lg text-black line-clamp-2 mb-1 cursor-pointer hover:text-purple transition-colors"
+              onClick={handleView}
+            >
               {title}
             </h3>
             {description && (
@@ -92,7 +96,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
             {/* Actions Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setShowDropdown(!showDropdown)}
+                onClick={() => setActiveDropdown(showDropdown ? null : blog._id)}
                 className="w-8 h-8 rounded-full hover:bg-grey/30 flex items-center justify-center"
                 disabled={isDeleting}
               >
@@ -177,7 +181,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
       {showDropdown && (
         <div
           className="fixed inset-0 md:hidden z-5"
-          onClick={() => setShowDropdown(false)}
+          onClick={() => setActiveDropdown(null)}
         />
       )}
     </div>

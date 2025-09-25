@@ -94,21 +94,6 @@ const SearchPage = () => {
         <p className="text-dark-grey line-clamp-3 mb-3">{blog.description}</p>
 
         <div className="flex items-center justify-between">
-          <div className="flex gap-4 text-sm text-dark-grey">
-            <span className="flex items-center gap-1">
-              <i className="fi fi-rr-heart"></i>
-              {blog.activity.total_likes || 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <i className="fi fi-rr-comment"></i>
-              {blog.activity.total_comments || 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <i className="fi fi-rr-eye"></i>
-              {blog.activity.total_reads || 0}
-            </span>
-          </div>
-
           <div className="flex gap-2">
             {blog.tags.slice(0, 3).map((tag, i) => (
               <button
