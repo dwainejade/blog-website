@@ -19,6 +19,7 @@ const blogStructure = {
   category: "",
   draftId: null, // null = new draft, string = existing draft
   blogId: null, // null = new blog, string = existing blog for edit
+  originalBlogId: null, // null = new blog, string = original blog ID for draft edits
   isLocalDraft: false, // indicates unsaved local changes
 };
 
@@ -74,6 +75,7 @@ const useEditorStore = create(
           description: blog.description || "",
           content: blog.content || { blocks: [] },
           tags: blog.tags || [],
+          original_blog_id: blog.originalBlogId || null,
         };
 
         try {
@@ -149,22 +151,64 @@ const useEditorStore = create(
             editorContent = blog.content;
           }
 
-          // Set the blog data in the store
-          set({
-            blog: {
-              title: blog.title || "",
-              banner: blog.banner || "",
-              content: editorContent,
-              tags: blog.tags || [],
-              description: blog.des || blog.description || "",
-              author: blog.author,
-              draftId: blog._id,
-              isLocalDraft: false,
-              blogId: blog._id, // Store the original blog ID for updates
-            },
-            editorState: "editor"
-          });
+          // Check if this is a draft or published blog
+          if (blog.draft) {
+            // This is a draft
+            set({
+              blog: {
+                title: blog.title || "",
+                banner: blog.banner || "",
+                content: editorContent,
+                tags: blog.tags || [],
+                description: blog.description || "",
+                author: blog.author,
+                draftId: blog._id,
+                blogId: null,
+                originalBlogId: blog.original_blog_id || null,
+                isLocalDraft: false,
+              },
+              editorState: "editor"
+            });
+          } else {
+            // This is a published blog - we need to create a draft for editing
+            try {
+              const draftResponse = await axios.post(
+                `${getServerDomain()}/create-edit-draft/${blog._id}`,
+                {},
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  withCredentials: true,
+                }
+              );
 
+              const draft = draftResponse.data.draft;
+
+              // Set the draft data in the store
+              set({
+                blog: {
+                  title: draft.title || "",
+                  banner: draft.banner || "",
+                  content: draft.content || editorContent,
+                  tags: draft.tags || [],
+                  description: draft.description || "",
+                  author: draft.author,
+                  draftId: draft._id,
+                  blogId: null,
+                  originalBlogId: draft.original_blog_id,
+                  isLocalDraft: false,
+                },
+                editorState: "editor"
+              });
+
+              toast.success("Draft created for editing");
+            } catch (draftError) {
+              console.error("Error creating draft:", draftError);
+              toast.error("Failed to create draft for editing");
+              return { success: false, error: "Failed to create draft for editing" };
+            }
+          }
 
           return { success: true, data: blog };
         } catch (error) {
@@ -196,23 +240,14 @@ const useEditorStore = create(
           return { success: false, error: "Description too long" };
         }
 
-        const blogObj = {
-          title: blog.title,
-          banner: blog.banner,
-          description: blog.description,
-          content: blog.content,
-          tags: blog.tags,
-          draft: false,
-        };
-
         try {
           let response;
 
-          if (blog.blogId) {
-            // Update existing blog
-            response = await axios.put(
-              `${getServerDomain()}/update-blog/${blog.blogId}`,
-              blogObj,
+          if (blog.draftId) {
+            // This is a draft - use the new publish-draft endpoint
+            response = await axios.post(
+              `${getServerDomain()}/publish-draft/${blog.draftId}`,
+              {},
               {
                 headers: {
                   "Content-Type": "application/json",
@@ -220,10 +255,23 @@ const useEditorStore = create(
                 withCredentials: true,
               }
             );
-            console.log("Blog updated:", response.data);
-            toast.success("Blog updated successfully!");
+
+            if (blog.originalBlogId) {
+              toast.success("Blog updated successfully!");
+            } else {
+              toast.success("Blog published successfully!");
+            }
           } else {
-            // Create new blog
+            // This is a new blog (shouldn't happen with new workflow, but keeping for compatibility)
+            const blogObj = {
+              title: blog.title,
+              banner: blog.banner,
+              description: blog.description,
+              content: blog.content,
+              tags: blog.tags,
+              draft: false,
+            };
+
             response = await axios.post(
               `${getServerDomain()}/create-blog`,
               blogObj,
@@ -234,7 +282,6 @@ const useEditorStore = create(
                 withCredentials: true,
               }
             );
-            console.log("Blog created:", response.data);
             toast.success("Blog published successfully!");
           }
 

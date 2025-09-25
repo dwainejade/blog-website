@@ -473,6 +473,7 @@ server.post("/drafts", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
       tags: tags || [],
       author: req.user,
       draft: true,
+      original_blog_id: req.body.original_blog_id || null,
     });
 
     const savedBlog = await blog.save();
@@ -559,6 +560,78 @@ server.put(
     }
   }
 );
+
+// Create draft from existing published blog for editing
+server.post("/create-edit-draft/:blogId", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
+  try {
+    const { blogId } = req.params;
+    const userId = req.user;
+
+    // Find the original published blog
+    const originalBlog = await Blog.findById(blogId);
+    if (!originalBlog) {
+      return res.status(404).json({ error: "Original blog not found" });
+    }
+
+    // Check if user is authorized to edit this blog
+    const user = await User.findById(userId);
+    const isAuthor = originalBlog.author.toString() === userId;
+    const isAdmin = user.role === "admin" || user.role === "superadmin";
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to edit this blog" });
+    }
+
+    // Check if draft already exists for this blog
+    let existingDraft = await Blog.findOne({
+      original_blog_id: blogId,
+      author: userId,
+      draft: true
+    });
+
+    if (existingDraft) {
+      // Return existing draft
+      return res.status(200).json({
+        message: "Draft already exists",
+        draftId: existingDraft._id,
+        blog_id: existingDraft.blog_id,
+        draft: existingDraft
+      });
+    }
+
+    // Create new draft copy
+    const draftBlog = new Blog({
+      blog_id: originalBlog.blog_id + "-draft-" + nanoid(6), // Unique blog_id for draft
+      title: originalBlog.title,
+      banner: originalBlog.banner,
+      description: originalBlog.description,
+      content: originalBlog.content,
+      tags: originalBlog.tags,
+      author: userId,
+      draft: true,
+      original_blog_id: blogId // Link to original blog
+    });
+
+    // Ensure draft blog_id is unique
+    let existingBlogId = await Blog.findOne({ blog_id: draftBlog.blog_id });
+    while (existingBlogId) {
+      draftBlog.blog_id = originalBlog.blog_id + "-draft-" + nanoid(6);
+      existingBlogId = await Blog.findOne({ blog_id: draftBlog.blog_id });
+    }
+
+    const savedDraft = await draftBlog.save();
+
+    res.status(201).json({
+      message: "Draft created from published blog",
+      draftId: savedDraft._id,
+      blog_id: savedDraft.blog_id,
+      draft: savedDraft
+    });
+  } catch (error) {
+    console.error("Error creating edit draft:", error);
+    res.status(500).json({ error: "Failed to create draft" });
+  }
+});
 
 server.post(
   "/create-blog",
@@ -649,6 +722,7 @@ server.post(
         tags: tags || [],
         author: req.user, // Use verified user ID
         draft: draft || false,
+        original_blog_id: req.body.original_blog_id || null,
       });
 
       const savedBlog = await blog.save();
@@ -681,6 +755,98 @@ server.post(
     }
   }
 );
+
+// Publish draft - handles both new blogs and updating existing blogs from drafts
+server.post("/publish-draft/:draftId", verifyJWT, verifyAdminOrSuperAdmin, async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user;
+
+    // Find the draft
+    const draft = await Blog.findOne({
+      _id: draftId,
+      author: userId,
+      draft: true
+    });
+
+    if (!draft) {
+      return res.status(404).json({ error: "Draft not found or not authorized" });
+    }
+
+    // Validate required fields for publishing
+    if (!draft.title || !draft.title.trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+    if (!draft.description || !draft.description.trim()) {
+      return res.status(400).json({ error: "Blog description is required" });
+    }
+    if (draft.description.length < 50) {
+      return res.status(400).json({ error: "Description should be at least 50 characters" });
+    }
+    if (draft.description.length > 200) {
+      return res.status(400).json({ error: "Description should not exceed 200 characters" });
+    }
+
+    if (draft.original_blog_id) {
+      // This is an edit draft - update the original blog
+      const originalBlog = await Blog.findById(draft.original_blog_id);
+      if (!originalBlog) {
+        return res.status(404).json({ error: "Original blog not found" });
+      }
+
+      // Update original blog with draft content
+      const updatedBlog = await Blog.findByIdAndUpdate(
+        draft.original_blog_id,
+        {
+          title: draft.title,
+          banner: draft.banner,
+          description: draft.description,
+          content: draft.content,
+          tags: draft.tags,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).populate(
+        "author",
+        "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      );
+
+      // Delete the draft
+      await Blog.findByIdAndDelete(draftId);
+
+      res.status(200).json({
+        message: "Blog updated successfully from draft",
+        blog: updatedBlog
+      });
+    } else {
+      // This is a new blog draft - publish it
+      const publishedBlog = await Blog.findByIdAndUpdate(
+        draftId,
+        {
+          draft: false,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).populate(
+        "author",
+        "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+      );
+
+      // Increment user's published post count
+      await User.findByIdAndUpdate(userId, {
+        $inc: { "account_info.total_posts": 1 }
+      });
+
+      res.status(200).json({
+        message: "Draft published successfully",
+        blog: publishedBlog
+      });
+    }
+  } catch (error) {
+    console.error("Error publishing draft:", error);
+    res.status(500).json({ error: "Failed to publish draft" });
+  }
+});
 
 // Get latest blogs
 server.get("/latest-blogs", async (req, res) => {

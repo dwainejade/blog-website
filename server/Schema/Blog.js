@@ -59,6 +59,11 @@ const blogSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    original_blog_id: {
+      type: Schema.Types.ObjectId,
+      ref: "blogs",
+      default: null,
+    },
   },
   {
     timestamps: {
