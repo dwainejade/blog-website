@@ -1507,6 +1507,44 @@ server.get("/unsplash/photos/:id/download", async (req, res) => {
   }
 });
 
+// Track download using download_location URL - REQUIRED for Unsplash API compliance
+server.post("/unsplash/track-download", async (req, res) => {
+  try {
+    const { downloadLocation } = req.body;
+
+    if (!downloadLocation) {
+      return res.status(400).json({ error: "Download location is required" });
+    }
+
+    // Make authorized request to the download_location URL
+    // This preserves all query parameters including ixid
+    const response = await fetch(downloadLocation, {
+      headers: {
+        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Unsplash API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Unsplash download tracked successfully for photo:", data.url || 'unknown');
+
+    res.json({
+      success: true,
+      message: "Download tracked successfully",
+      url: data.url
+    });
+  } catch (error) {
+    console.error("Unsplash download tracking error:", error);
+    res.status(500).json({
+      error: "Failed to track download from Unsplash",
+      success: false
+    });
+  }
+});
+
 // Add comment to blog
 server.post("/add-comment", verifyJWT, async (req, res) => {
   try {

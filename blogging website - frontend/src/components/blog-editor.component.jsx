@@ -8,6 +8,7 @@ import EditorJS from "@editorjs/editorjs";
 import { tools } from "./tools.component";
 import EditorNav from "./editor-nav.component";
 import Nav from "./nav.component";
+import { trackUnsplashDownload } from "../utils/unsplash";
 
 // const blogStructure = {
 //   title: "",
@@ -60,8 +61,36 @@ const BlogEditor = () => {
           onReady: () => {
             console.log("Editor.js is ready to work!");
           },
-          onChange: () => {
+          onChange: async () => {
             console.log("Editor content changed");
+
+            // Track Unsplash downloads when images are added
+            try {
+              if (editorRef.current) {
+                const outputData = await editorRef.current.save();
+
+                // Check for new Unsplash images and track downloads
+                outputData.blocks.forEach(block => {
+                  if (block.type === 'image' && block.data.url && block.data.url.includes('unsplash.com')) {
+                    // Extract Unsplash photo data if available
+                    if (block.data.unsplash && block.data.unsplash.download_location) {
+                      // Track download asynchronously
+                      trackUnsplashDownload(block.data.unsplash.download_location)
+                        .then(success => {
+                          if (success) {
+                            console.log('Unsplash download tracked for image:', block.data.unsplash.id);
+                          }
+                        })
+                        .catch(err => {
+                          console.error('Failed to track Unsplash download:', err);
+                        });
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.error('Error tracking Unsplash downloads:', error);
+            }
           },
         });
       } catch (error) {
