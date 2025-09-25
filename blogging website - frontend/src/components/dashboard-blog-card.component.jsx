@@ -45,7 +45,7 @@ const DashboardBlogCard = ({ blog, onDelete }) => {
   const handleTagClick = (e, tag) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/search?query=${encodeURIComponent(tag)}&type=blogs`);
+    navigate(`/search?q=${encodeURIComponent(tag)}&type=blogs`);
   };
 
   return (

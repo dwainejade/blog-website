@@ -40,6 +40,10 @@ const BlogPage = () => {
     }
   }, [blog_id]);
 
+  const handleTagClick = (tag) => {
+    navigate(`/search?q=${encodeURIComponent(tag)}&type=blogs`);
+  };
+
   if (loading) {
     return <Loader />;
   }
@@ -152,13 +156,14 @@ const BlogPage = () => {
 
         {tags && tags.length > 0 && (
           <div className="mt-12">
-            <p className="text-2xl mt-14 mb-10 font-medium text-dark-grey">
-              Similar Blogs
-            </p>
             <div className="flex flex-wrap gap-2 mt-7">
               {tags.map((tag, index) => (
-                <span key={index} className="tag">
-                  {tag}
+                <span
+                  key={index}
+                  onClick={() => handleTagClick(tag)}
+                  className="tag cursor-pointer hover:bg-gray-200 transition-colors duration-200"
+                >
+                  #{tag}
                 </span>
               ))}
             </div>
