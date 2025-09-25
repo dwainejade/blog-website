@@ -33,12 +33,12 @@ const EditProfile = () => {
         username: user.username || "",
         bio: user.bio || "",
         social_links: {
-          youtube: user.youtube || "",
-          instagram: user.instagram || "",
-          facebook: user.facebook || "",
-          twitter: user.twitter || "",
-          github: user.github || "",
-          website: user.website || "",
+          youtube: user.youtube || user.social_links?.youtube || "",
+          instagram: user.instagram || user.social_links?.instagram || "",
+          facebook: user.facebook || user.social_links?.facebook || "",
+          twitter: user.twitter || user.social_links?.twitter || "",
+          github: user.github || user.social_links?.github || "",
+          website: user.website || user.social_links?.website || "",
         },
       });
       setProfileImg(user.profile_img || "");

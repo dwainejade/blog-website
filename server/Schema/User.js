@@ -33,7 +33,6 @@ const userSchema = mongoose.Schema(
     personal_info: {
       fullname: {
         type: String,
-        lowercase: true,
         required: true,
         minlength: [3, "fullname must be 3 letters long"],
       },
@@ -111,8 +110,8 @@ const userSchema = mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'superadmin'],
-      default: 'user',
+      enum: ["user", "admin", "superadmin"],
+      default: "user",
     },
     blogs: {
       type: [Schema.Types.ObjectId],

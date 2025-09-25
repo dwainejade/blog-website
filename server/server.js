@@ -13,6 +13,40 @@ import Blog from "./Schema/Blog.js";
 import Comment from "./Schema/Comment.js";
 import Notification from "./Schema/Notification.js";
 
+// tutorial content - we'll read this dynamically to avoid caching
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Function to dynamically load tutorial content (bypasses Node.js import cache)
+const getTutorialContent = () => {
+  try {
+    const tutorialPath = path.resolve(__dirname, '../tutorial-content.js');
+    const content = fs.readFileSync(tutorialPath, 'utf8');
+
+    // Remove the import cache for this file
+    const moduleUrl = `file://${tutorialPath}`;
+    delete import.meta.resolve?.cache?.[moduleUrl];
+
+    // Use dynamic import with timestamp to bypass cache
+    return import(`${moduleUrl}?t=${Date.now()}`).then(module => module.tutorialBlogContent);
+  } catch (error) {
+    console.error('Error loading tutorial content:', error);
+    // Fallback content
+    return Promise.resolve({
+      title: "Tutorial Loading Error",
+      description: "Could not load tutorial content",
+      banner: "",
+      content: { blocks: [] },
+      tags: [],
+      category: "Error"
+    });
+  }
+};
+
 // dotenv.config();
 
 const server = express();
@@ -130,10 +164,19 @@ const formatDataToSend = (user) => {
     profile_img: user.personal_info.profile_img,
     username: user.personal_info.username,
     fullname: user.personal_info.fullname,
+    bio: user.personal_info.bio,
     id: user._id,
     role: user.role,
     personal_info: user.personal_info,
     account_info: user.account_info,
+    social_links: user.social_links,
+    // Also include flattened social links for compatibility
+    youtube: user.social_links?.youtube || "",
+    instagram: user.social_links?.instagram || "",
+    facebook: user.social_links?.facebook || "",
+    twitter: user.social_links?.twitter || "",
+    github: user.social_links?.github || "",
+    website: user.social_links?.website || "",
   };
 };
 
@@ -241,6 +284,26 @@ const gernerateUsername = async (email) => {
   return username;
 };
 
+// Helper function to create tutorial notification for admin users
+const createTutorialNotification = async (userId) => {
+  try {
+    const tutorialNotification = new Notification({
+      type: "tutorial",
+      notification_for: userId,
+      tutorial_link: "/editor/tutorial-preview", // Frontend route that will call /preview-tutorial
+      seen: false
+    });
+
+    await tutorialNotification.save();
+    console.log(`Tutorial notification created for admin user ${userId}`);
+    return tutorialNotification;
+  } catch (error) {
+    console.error('Error creating tutorial notification:', error);
+    // Don't fail the signup process if notification creation fails
+    return null;
+  }
+};
+
 server.post("/signup", async (req, res) => {
   let { fullname, email, password } = req.body;
 
@@ -287,9 +350,14 @@ server.post("/signup", async (req, res) => {
 
     user
       .save()
-      .then((user) => {
+      .then(async (user) => {
         const { accessToken, refreshToken } = generateTokens(user);
         setTokenCookies(res, accessToken, refreshToken);
+
+        // Create tutorial notification for admin users
+        if (user.role === "admin" || user.role === "superadmin") {
+          await createTutorialNotification(user._id);
+        }
 
         // Also send tokens in response body for mobile fallback
         const userData = formatDataToSend(user);
@@ -1106,9 +1174,6 @@ server.delete("/blog/:blogId", verifyJWT, async (req, res) => {
 // Profile management endpoints
 server.put("/update-profile", verifyJWT, async (req, res) => {
   try {
-    console.log("Update profile request - userId:", req.user);
-    console.log("Update profile request - body:", req.body);
-
     const userId = req.user;
     const { fullname, username, bio, social_links } = req.body;
 
@@ -1144,12 +1209,12 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
 
     // Prepare update object
     const updateData = {};
-    if (fullname) updateData["personal_info.fullname"] = fullname;
-    if (username) updateData["personal_info.username"] = username;
+    if (fullname !== undefined && fullname !== null) updateData["personal_info.fullname"] = fullname;
+    if (username !== undefined && username !== null) updateData["personal_info.username"] = username;
     if (bio !== undefined) updateData["personal_info.bio"] = bio;
-    if (social_links) {
+    if (social_links && typeof social_links === 'object') {
       Object.keys(social_links).forEach((platform) => {
-        updateData[`social_links.${platform}`] = social_links[platform];
+        updateData[`social_links.${platform}`] = social_links[platform] || "";
       });
     }
 
@@ -1167,6 +1232,7 @@ server.put("/update-profile", verifyJWT, async (req, res) => {
       email: updatedUser.personal_info?.email || "",
       bio: updatedUser.personal_info?.bio || "",
       profile_img: updatedUser.personal_info?.profile_img || "",
+      social_links: updatedUser.social_links || {},
       ...(updatedUser.social_links || {}),
     };
 
@@ -2217,6 +2283,88 @@ const createNotification = async (type, blog_id, notification_for, user_id, comm
     console.error("Error creating notification:", err);
   }
 };
+
+// Manual endpoint to add tutorial notification to existing admin user
+server.post("/add-tutorial-notification/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    // Find user by username
+    const user = await User.findOne({ "personal_info.username": username });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if user is admin
+    if (user.role !== "admin" && user.role !== "superadmin") {
+      return res.status(403).json({ error: "Tutorial notifications are only for admin users" });
+    }
+
+    // Check if tutorial notification already exists for this user
+    const existingNotification = await Notification.findOne({
+      notification_for: user._id,
+      type: "tutorial"
+    });
+
+    if (existingNotification) {
+      return res.status(400).json({ error: "Tutorial notification already exists for this user" });
+    }
+
+    // Create tutorial notification
+    const tutorialNotification = await createTutorialNotification(user._id);
+
+    if (tutorialNotification) {
+      return res.status(200).json({
+        message: "Tutorial notification created successfully",
+        notificationId: tutorialNotification._id,
+        user: user.personal_info.username
+      });
+    } else {
+      return res.status(500).json({ error: "Failed to create tutorial notification" });
+    }
+
+  } catch (error) {
+    console.error("Error adding tutorial notification:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Preview tutorial content in editor format
+server.get("/preview-tutorial", async (req, res) => {
+  try {
+    // Get fresh tutorial content (bypasses cache)
+    const tutorialBlogContent = await getTutorialContent();
+
+    // Return tutorial content in the same format as a blog/draft for the editor
+    const tutorialPreview = {
+      blog: {
+        title: tutorialBlogContent.title,
+        banner: tutorialBlogContent.banner,
+        description: tutorialBlogContent.description,
+        content: tutorialBlogContent.content,
+        tags: tutorialBlogContent.tags,
+        category: tutorialBlogContent.category,
+        draft: true,
+        _id: "tutorial-preview", // Special ID for preview
+        author: {
+          personal_info: {
+            fullname: "Tutorial System",
+            username: "tutorial",
+            profile_img: ""
+          }
+        },
+        publishedAt: new Date()
+      }
+    };
+
+    return res.status(200).json(tutorialPreview);
+
+  } catch (error) {
+    console.error("Error loading tutorial preview:", error);
+    return res.status(500).json({ error: "Failed to load tutorial preview" });
+  }
+});
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -213,7 +213,9 @@ const ProfilePage = () => {
 
   // Determine which user data to use
   const displayUser = isOwnProfile ? user : viewingUser;
-  const displayProfileImg = isOwnProfile ? profileImg : displayUser?.personal_info?.profile_img;
+  const displayProfileImg = isOwnProfile
+    ? profileImg
+    : displayUser?.personal_info?.profile_img;
 
   return (
     <AnimationWrapper>
@@ -222,7 +224,13 @@ const ProfilePage = () => {
         {/* Header with Edit Toggle */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-gelasio">
-            {isOwnProfile ? "My Profile" : `${displayUser?.personal_info?.fullname || displayUser?.personal_info?.username || "User"}'s Profile`}
+            {isOwnProfile
+              ? "My Profile"
+              : `${
+                  displayUser?.personal_info?.fullname ||
+                  displayUser?.personal_info?.username ||
+                  "User"
+                }'s Profile`}
           </h1>
           {isOwnProfile && (
             <div className="flex gap-3">
@@ -307,9 +315,8 @@ const ProfilePage = () => {
                 ) : (
                   <h2 className="text-3xl font-bold text-black">
                     {isOwnProfile
-                      ? (profileData.fullname || "Not provided")
-                      : (displayUser?.personal_info?.fullname || "Not provided")
-                    }
+                      ? profileData.fullname || "Not provided"
+                      : displayUser?.personal_info?.fullname || "Not provided"}
                   </h2>
                 )}
               </div>
@@ -326,10 +333,10 @@ const ProfilePage = () => {
                   />
                 ) : (
                   <p className="text-xl text-dark-grey">
-                    @{isOwnProfile
-                      ? (profileData.username || "Not set")
-                      : (displayUser?.personal_info?.username || "Not set")
-                    }
+                    @
+                    {isOwnProfile
+                      ? profileData.username || "Not set"
+                      : displayUser?.personal_info?.username || "Not set"}
                   </p>
                 )}
               </div>
@@ -354,9 +361,8 @@ const ProfilePage = () => {
                 ) : (
                   <p className="text-lg leading-7 text-dark-grey">
                     {isOwnProfile
-                      ? (profileData.bio || "No bio provided yet.")
-                      : (displayUser?.personal_info?.bio || "No bio provided.")
-                    }
+                      ? profileData.bio || "No bio provided yet."
+                      : displayUser?.personal_info?.bio || "No bio provided."}
                   </p>
                 )}
               </div>
@@ -365,49 +371,68 @@ const ProfilePage = () => {
 
           {/* Social Links */}
           <div className="mb-12">
-            <h3 className="text-2xl font-medium mb-6 text-center">Social Links</h3>
+            <h3 className="text-2xl font-medium mb-6 text-center">
+              Social Links
+            </h3>
             <div className="flex flex-wrap justify-center gap-4">
-              {Object.entries(isOwnProfile ? profileData.social_links : (displayUser?.social_links || {})).map(
-                ([platform, url]) => {
-                  if (isOwnProfile && isEditing) {
-                    return (
-                      <div key={platform} className="w-full max-w-sm">
-                        <label className="text-sm font-medium text-dark-grey capitalize block mb-2">
-                          {platform}
-                        </label>
-                        <InputBox
-                          name={`social_${platform}`}
-                          type="url"
-                          placeholder={`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`}
-                          icon={platform === 'website' ? 'fi-rr-globe' : `fi-brands-${platform}`}
-                          value={url}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    );
-                  }
+              {Object.entries(
+                isOwnProfile
+                  ? profileData.social_links
+                  : displayUser?.social_links || {}
+              ).map(([platform, url]) => {
+                if (isOwnProfile && isEditing) {
+                  return (
+                    <div key={platform} className="w-full max-w-sm">
+                      <label className="text-sm font-medium text-dark-grey capitalize block mb-2">
+                        {platform}
+                      </label>
+                      <InputBox
+                        name={`social_${platform}`}
+                        type="url"
+                        placeholder={`${
+                          platform.charAt(0).toUpperCase() + platform.slice(1)
+                        } URL`}
+                        icon={
+                          platform === "website"
+                            ? "fi-rr-globe"
+                            : `fi-brands-${platform}`
+                        }
+                        value={url}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  );
+                }
 
-                  if (!url) return null;
+                if (!url) return null;
 
-                  // Ensure URL has protocol for external links
-                  const externalUrl = url.startsWith('http://') || url.startsWith('https://')
+                // Ensure URL has protocol for external links
+                const externalUrl =
+                  url.startsWith("http://") || url.startsWith("https://")
                     ? url
                     : `https://${url}`;
 
-                  return (
-                    <a
-                      key={platform}
-                      href={externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-12 h-12 bg-grey/20 hover:bg-purple/20 rounded-full transition-colors group"
-                      title={`${platform.charAt(0).toUpperCase() + platform.slice(1)}`}
-                    >
-                      <i className={`fi ${platform === 'website' ? 'fi-rr-globe' : `fi-brands-${platform}`} text-xl text-dark-grey group-hover:text-purple transition-colors`}></i>
-                    </a>
-                  );
-                }
-              )}
+                return (
+                  <a
+                    key={platform}
+                    href={externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center w-16 h-16 bg-grey/20 hover:bg-purple/20 rounded-full transition-colors group"
+                    title={`${
+                      platform.charAt(0).toUpperCase() + platform.slice(1)
+                    }`}
+                  >
+                    <i
+                      className={`fi ${
+                        platform === "website"
+                          ? "fi-rr-globe"
+                          : `fi-brands-${platform}`
+                      } text-2xl text-dark-grey group-hover:text-purple transition-colors`}
+                    ></i>
+                  </a>
+                );
+              })}
             </div>
           </div>
 
@@ -424,7 +449,16 @@ const ProfilePage = () => {
                 </div>
                 <div className="bg-grey/10 p-6 rounded-lg text-center">
                   <p className="text-3xl font-bold text-dark-grey">
-                    {formatDate(displayUser?.joinedAt).split(' ')[2] || "2024"}
+                    {displayUser?.joinedAt
+                      ? new Date(displayUser.joinedAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )
+                      : "Unknown"}
                   </p>
                   <p className="text-sm text-dark-grey mt-2">Joined</p>
                 </div>
@@ -435,11 +469,17 @@ const ProfilePage = () => {
           {/* Recent Posts for Public Profile */}
           {!isOwnProfile && (
             <div className="mb-12">
-              <h3 className="text-2xl font-medium mb-6 text-center">Recent Posts</h3>
+              <h3 className="text-2xl font-medium mb-6 text-center">
+                Recent Posts
+              </h3>
               <div className="space-y-4">
                 {displayUser?.blogs && displayUser.blogs.length > 0 ? (
                   displayUser.blogs.map((blog, index) => (
-                    <BlogCard key={index} blog={blog} author={displayUser.personal_info} />
+                    <BlogCard
+                      key={index}
+                      blog={blog}
+                      author={displayUser.personal_info}
+                    />
                   ))
                 ) : (
                   <p className="text-dark-grey text-center">No posts yet.</p>
@@ -451,7 +491,9 @@ const ProfilePage = () => {
           {/* Account Settings for Own Profile */}
           {isOwnProfile && (
             <div className="mb-12">
-              <h3 className="text-2xl font-medium mb-6 text-center">Account Settings</h3>
+              <h3 className="text-2xl font-medium mb-6 text-center">
+                Account Settings
+              </h3>
               <div className="space-y-4 max-w-md mx-auto">
                 <Link
                   to="/settings/change-password"

@@ -97,11 +97,7 @@ const SearchPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
             {blog.tags.slice(0, 3).map((tag, i) => (
-              <Tag
-                key={i}
-                onClick={() => handleTagClick(tag)}
-                className="text-xs bg-grey px-2 py-1 rounded-full hover:bg-black/10 hover:text-black transition-colors cursor-pointer"
-              >
+              <Tag key={i} onClick={() => handleTagClick(tag)}>
                 {tag}
               </Tag>
             ))}
