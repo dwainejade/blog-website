@@ -82,7 +82,7 @@ export const tools = {
   header: {
     class: Header,
     config: {
-      placeholder: "Type Heading...",
+      placeholder: "Type Header",
       levels: [2, 3],
       defaultLevel: 2,
     },

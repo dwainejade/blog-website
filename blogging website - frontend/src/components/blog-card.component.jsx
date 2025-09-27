@@ -54,9 +54,11 @@ const BlogCard = ({ blog }) => {
           </p>
         </div>
 
-        <h1 className="blog-title mb-3">{title}</h1>
+        <h1 className="blog-title text-[24px] mb-3 font-bold font-inter">
+          {title}
+        </h1>
 
-        <p className="text-lg font-gelasio leading-7 line-clamp-3 mb-4 text-dark-grey">
+        <p className="text-xl font-gelasio leading-7 line-clamp-3 mb-4 text-dark-grey">
           {description}
         </p>
 
