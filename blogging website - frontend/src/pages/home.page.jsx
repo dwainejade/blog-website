@@ -13,7 +13,7 @@ const HomePage = () => {
   return (
     <AnimationWrapper>
       <section className="">
-        <div className="w-full max-w-[1200px] mx-auto px-4">
+        <div className="w-full max-w-[1100px] mx-auto px-4">
           <h1 className="font-medium text-xl mb-8">Latest Blogs</h1>
 
           {error && <div className="text-red text-center py-4">{error}</div>}

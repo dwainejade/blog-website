@@ -61,7 +61,7 @@ const Navbar = () => {
             <i className="fi fi-rr-search text-xl" />
           </button>
 
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <>
               {/* <Link
                 to="/editor"
@@ -113,16 +113,6 @@ const Navbar = () => {
                   <p>Sign Out</p>
                 </button> */}
               </div>
-            </>
-          ) : (
-            <>
-              <Link to="/signin" className="btn-dark">
-                <p>Sign In</p>
-              </Link>
-
-              <Link to="/signup" className="btn-light hidden md:block">
-                <p>Sign Up</p>
-              </Link>
             </>
           )}
         </div>

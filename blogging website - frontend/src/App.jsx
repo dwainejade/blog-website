@@ -41,7 +41,6 @@ const App = () => {
           <Route path="settings/change-password" element={<ChangePassword />} />
           <Route path="settings/change-email" element={<ChangeEmail />} />
           <Route path="signin" element={<UserAuthForm type="signin" />} />
-          <Route path="signup" element={<UserAuthForm type="signup" />} />
           {/* {isAuthenticated && <Route path="editor" element={<EditorPage />} />} */}
           <Route path="*" element={<div>404 Not Found</div>} />
         </Route>

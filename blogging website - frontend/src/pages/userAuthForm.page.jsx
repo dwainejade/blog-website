@@ -8,7 +8,7 @@ import useAuthStore from "../stores/authStore";
 const UserAuthForm = ({ type }) => {
   const authForm = useRef(null);
   const navigate = useNavigate();
-  const { login, signup, isLoading, error } = useAuthStore();
+  const { login, isLoading, error } = useAuthStore();
 
   const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
   const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
@@ -19,12 +19,7 @@ const UserAuthForm = ({ type }) => {
     // handle form submission logic here
     const formData = new FormData(authForm.current);
     const data = Object.fromEntries(formData.entries());
-    const { fullname, email, password } = data;
-
-    // validate fullname presence and length for signup
-    if (type === "signup" && fullname && fullname.length < 3) {
-      return toast.error("Name must be at least 3 characters long.");
-    }
+    const { email, password } = data;
 
     // validate email presence and format
     if (!email.length) {
@@ -44,11 +39,7 @@ const UserAuthForm = ({ type }) => {
     }
 
     try {
-      if (type === "signin") {
-        await login({ email, password });
-      } else {
-        await signup({ fullname, email, password });
-      }
+      await login({ email, password });
       navigate("/"); // redirect to home page
     } catch (error) {
       toast.error(error.response?.data?.error || "Authentication failed");
@@ -61,17 +52,8 @@ const UserAuthForm = ({ type }) => {
         <Toaster position="top-center" />
         <form ref={authForm} className="w-[80%] max-w-[400px]">
           <h1 className="text-4xl font-gelasio capitalize text-center mb-10">
-            {type === "signin" ? "Welcome back" : "Join us today"}
+            Welcome back
           </h1>
-
-          {type !== "signin" ? (
-            <InputBox
-              name="fullname"
-              type="text"
-              placeholder="Full Name"
-              icon={"fi-rr-user"}
-            />
-          ) : null}
 
           <InputBox
             name="email"
@@ -93,34 +75,8 @@ const UserAuthForm = ({ type }) => {
             onClick={handleSubmit}
             disabled={isLoading}
           >
-            {isLoading
-              ? "Loading..."
-              : type
-                  .replace(/signin/g, "Sign In")
-                  .replace(/signup/g, "Sign Up")}
+            {isLoading ? "Loading..." : "Sign In"}
           </button>
-
-          {type === "signin" ? (
-            <p className="text-center text-dark-grey mt-10">
-              Don't have an account?{" "}
-              <Link
-                to="/signup"
-                className="text-blue-500 cursor-pointer underline text-black text-xl ml-1"
-              >
-                Sign Up
-              </Link>
-            </p>
-          ) : (
-            <p className="text-center text-dark-grey mt-10">
-              Already have an account?{" "}
-              <Link
-                to="/signin"
-                className="text-blue-500 cursor-pointer underline text-black text-xl ml-1"
-              >
-                Sign In
-              </Link>
-            </p>
-          )}
         </form>
       </section>
     </AnimationWrapper>
