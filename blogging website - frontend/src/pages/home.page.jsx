@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import AnimationWrapper from "../common/page-animation";
-import BlogCard from "../components/blog-card.component";
+import FeaturedBlogCard from "../components/featured-blog-card.component";
 import useBlogStore from "../stores/blogStore";
 
 const HomePage = () => {
@@ -13,7 +13,7 @@ const HomePage = () => {
   return (
     <AnimationWrapper>
       <section className="">
-        <div className="w-full max-w-[800px] mx-auto">
+        <div className="w-full max-w-[1200px] mx-auto px-4">
           <h1 className="font-medium text-xl mb-8">Latest Blogs</h1>
 
           {error && <div className="text-red text-center py-4">{error}</div>}
@@ -27,7 +27,7 @@ const HomePage = () => {
             <div className="flex flex-col">
               {blogs.length > 0 ? (
                 blogs.map((blog, index) => (
-                  <BlogCard key={blog.blog_id || index} blog={blog} />
+                  <FeaturedBlogCard key={blog.blog_id || index} blog={blog} />
                 ))
               ) : (
                 <div className="text-center py-8">

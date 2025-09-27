@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { formatDate } from "../common/date";
+import { formatDate, getFullDate } from "../common/date";
 import Tag from "./tag.component";
 
 const BlogCard = ({ blog }) => {
@@ -26,6 +26,8 @@ const BlogCard = ({ blog }) => {
     navigate(`/search?q=${encodeURIComponent(tag)}&type=blogs`);
   };
 
+  console.log(publishedAt);
+
   return (
     <Link
       to={`/blog/${blog_id}`}
@@ -50,7 +52,7 @@ const BlogCard = ({ blog }) => {
             {fullname}
           </p>
           <p className="min-w-fit text-sm text-dark-grey">
-            {formatDate(publishedAt)}
+            {getFullDate(publishedAt)}
           </p>
         </div>
 

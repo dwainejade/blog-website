@@ -3,6 +3,15 @@ export const getDay = (timestamp) => {
   return date.toDateString().split(" ").slice(1, 3).join(" ");
 };
 
+export const getFullDate = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+};
+
 export const formatDate = (timestamp) => {
   const now = new Date();
   const date = new Date(timestamp);
